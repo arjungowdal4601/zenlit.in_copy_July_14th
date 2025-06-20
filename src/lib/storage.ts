@@ -1,6 +1,6 @@
 // src/lib/storage.ts
 import { supabase } from './supabase';
-import { resizeImage,  validateImageFile } from '../utils/imageUtils';
+import { resizeImage,dataURLtoBlob,  validateImageFile } from '../utils/imageUtils';
 
 // Convert data URL (base64) to Blob for Supabase Storage upload
 export function dataURLtoBlob(dataURL: string): Blob {
