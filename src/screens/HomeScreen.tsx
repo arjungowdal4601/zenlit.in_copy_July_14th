@@ -4,7 +4,8 @@ import { UserProfile } from '../components/profile/UserProfile';
 import { User, Post } from '../types';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
-import { getAllPosts } from '../lib/posts';
+import { getAllPosts, getUserPosts } from '../lib/posts';
+import { transformProfileToUser } from '../../lib/utils';
 
 interface Props {
   userGender: 'male' | 'female';
@@ -12,9 +13,11 @@ interface Props {
 
 export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUserPosts, setSelectedUserPosts] = useState<Post[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingUserProfile, setIsLoadingUserProfile] = useState(false);
   
   useEffect(() => {
     loadCurrentUserAndPosts();
@@ -52,8 +55,11 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   };
 
   const handleUserClick = async (userId: string) => {
+    setIsLoadingUserProfile(true);
     try {
-      // Get user profile
+      console.log('Loading user profile for userId:', userId);
+      
+      // Get user profile from database
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -62,31 +68,27 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
 
       if (error || !profile) {
         console.error('Error loading user profile:', error);
+        setIsLoadingUserProfile(false);
         return;
       }
 
-      // Transform database profile to User type - use local default instead of stock image
-      const transformedUser: User = {
-        id: profile.id,
-        name: profile.name,
-        dpUrl: profile.profile_photo_url || '/images/default-avatar.png',
-        bio: profile.bio,
-        gender: profile.gender,
-        age: profile.date_of_birth ? 
-          new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : 25,
-        distance: Math.floor(Math.random() * 50) + 1,
-        links: {
-          Twitter: profile.twitter_url || '#',
-          Instagram: profile.instagram_url || '#',
-          LinkedIn: profile.linked_in_url || '#',
-        },
-        instagramUrl: profile.instagram_url,
-        linkedInUrl: profile.linked_in_url,
-        twitterUrl: profile.twitter_url,
-      };
+      console.log('Profile loaded:', profile);
+
+      // Transform database profile to User type
+      const transformedUser: User = transformProfileToUser(profile);
+      
+      console.log('Transformed user:', transformedUser);
+
+      // Load user's posts
+      const userPosts = await getUserPosts(userId);
+      console.log('User posts loaded:', userPosts.length);
+
       setSelectedUser(transformedUser);
+      setSelectedUserPosts(userPosts);
     } catch (error) {
       console.error('Error loading user:', error);
+    } finally {
+      setIsLoadingUserProfile(false);
     }
   };
 
@@ -94,12 +96,25 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
     return (
       <div className="min-h-full bg-black">
         <button
-          onClick={() => setSelectedUser(null)}
+          onClick={() => {
+            setSelectedUser(null);
+            setSelectedUserPosts([]);
+          }}
           className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
         >
           <ChevronLeftIcon className="w-5 h-5 text-white" />
         </button>
-        <UserProfile user={selectedUser} />
+        
+        {isLoadingUserProfile ? (
+          <div className="min-h-full bg-black flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading profile...</p>
+            </div>
+          </div>
+        ) : (
+          <UserProfile user={selectedUser} posts={selectedUserPosts} />
+        )}
       </div>
     );
   }
