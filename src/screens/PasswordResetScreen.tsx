@@ -1,110 +1,51 @@
 import React, { useState } from 'react';
 import { ChevronLeftIcon, CheckCircleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { sendPasswordReset } from '../lib/auth';
 
 interface Props {
   onBack: () => void;
 }
 
 export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
-  const [step, setStep] = useState<'email' | 'otp' | 'newPassword' | 'success'>('email');
-  const [formData, setFormData] = useState({
-    email: '',
-    otp: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
+  const [step, setStep] = useState<'email' | 'success'>('email');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const handleSendResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-  const handleSendResetCode = async () => {
-    if (!formData.email) {
-      alert('Please enter your email address');
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
     setIsLoading(true);
-    
-    // Simulate sending reset code
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsLoading(false);
-    setStep('otp');
-    setCountdown(60);
 
-    // Start countdown timer
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!formData.otp || formData.otp.length !== 6) {
-      alert('Please enter a valid 6-digit code');
-      return;
+    try {
+      console.log('Sending password reset email to:', email);
+      const result = await sendPasswordReset(email);
+      
+      if (result.success) {
+        console.log('Password reset email sent successfully');
+        setStep('success');
+      } else {
+        console.error('Password reset failed:', result.error);
+        setError(result.error || 'Failed to send reset email');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(true);
-    
-    // Simulate OTP verification
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    setStep('newPassword');
-  };
-
-  const handleResetPassword = async () => {
-    if (!formData.newPassword || formData.newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
-      return;
-    }
-
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    // Simulate password reset
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsLoading(false);
-    setStep('success');
-  };
-
-  const handleResendCode = async () => {
-    setIsLoading(true);
-    
-    // Simulate resending code
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    setCountdown(60);
-
-    // Start countdown timer
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
   };
 
   const renderEmailStep = () => (
@@ -114,181 +55,59 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
           <EnvelopeIcon className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">Reset Password</h2>
-          <p className="text-gray-400">
-            Enter your email address and we&apos;ll send you a code to reset your password
-          </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Email Address
-        </label>
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Enter your email address"
-          required
-        />
-      </div>
-
-      <button
-        onClick={handleSendResetCode}
-        disabled={isLoading || !formData.email}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isLoading ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Sending Code...
-          </>
-          ) : (
-            "Send Reset Code"
-          )}
-      </button>
-    </div>
-  );
-
-  const renderOtpStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircleIcon className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
-          <p className="text-gray-400">
-            We&apos;ve sent a 6-digit code to <span className="text-white">{formData.email}</span>
-          </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Enter Verification Code
-        </label>
-        <input
-          type="text"
-          value={formData.otp}
-          onChange={(e) => {
-            const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-            handleInputChange('otp', value);
-          }}
-          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center tracking-widest text-lg"
-          placeholder="000000"
-          maxLength={6}
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Enter the 6-digit code sent to your email
-        </p>
-      </div>
-
-      <button
-        onClick={handleVerifyOtp}
-        disabled={isLoading || formData.otp.length !== 6}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isLoading ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Verifying...
-          </>
-          ) : (
-            "Verify Code"
-          )}
-      </button>
-
-      <div className="text-center">
-          <p className="text-gray-400 text-sm">
-            Didn&apos;t receive the code?{' '}
-          <button
-            onClick={handleResendCode}
-            disabled={countdown > 0 || isLoading}
-            className="text-blue-400 hover:text-blue-300 transition-colors disabled:text-gray-500 disabled:cursor-not-allowed"
-          >
-            {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
-          </button>
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderNewPasswordStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Create New Password</h2>
         <p className="text-gray-400">
-          Choose a strong password for your account
+          Enter your email address and we'll send you a link to reset your password
         </p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          New Password
-        </label>
-        <div className="relative">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={formData.newPassword}
-            onChange={(e) => handleInputChange('newPassword', e.target.value)}
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
-            placeholder="Enter new password"
-            required
-            minLength={6}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-          >
-            {showPassword ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            )}
-          </button>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-900/30 border border-red-700 rounded-lg p-3">
+          <p className="text-red-400 text-sm">{error}</p>
         </div>
-        <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters</p>
-      </div>
+      )}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Confirm New Password
-        </label>
-        <input
-          type="password"
-          value={formData.confirmPassword}
-          onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Confirm new password"
-          required
-          minLength={6}
-        />
-      </div>
+      <form onSubmit={handleSendResetCode}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Email Address
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter your email address"
+            required
+            disabled={isLoading}
+          />
+        </div>
 
-      <button
-        onClick={handleResetPassword}
-        disabled={isLoading || !formData.newPassword || !formData.confirmPassword}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isLoading ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Resetting Password...
-          </>
+        <button
+          type="submit"
+          disabled={isLoading || !email.trim()}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isLoading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Sending Reset Link...
+            </>
           ) : (
-            "Reset Password"
+            "Send Reset Link"
           )}
-      </button>
+        </button>
+      </form>
+
+      <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-blue-300 mb-2">What happens next?</h3>
+        <ul className="text-xs text-blue-200 space-y-1">
+          <li>• We'll send a secure reset link to your email</li>
+          <li>• Click the link to open a new password creation page</li>
+          <li>• Create your new password</li>
+          <li>• Return to the app and sign in with your new password</li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -297,17 +116,48 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
       <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
         <CheckCircleIcon className="w-10 h-10 text-white" />
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Password Reset Successful!</h2>
-      <p className="text-gray-400 mb-6">
-        Your password has been successfully reset. You can now sign in with your new password.
-      </p>
+      <h2 className="text-2xl font-bold text-white mb-2">Check Your Email!</h2>
+      <div className="space-y-4">
+        <p className="text-gray-300">
+          We've sent a password reset link to:
+        </p>
+        <div className="bg-gray-800 rounded-lg p-3">
+          <p className="text-blue-400 font-medium">{email}</p>
+        </div>
+        <p className="text-gray-400 text-sm">
+          Click the link in the email to reset your password. The link will expire in 1 hour for security.
+        </p>
+      </div>
       
-      <button
-        onClick={onBack}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all"
-      >
-        Back to Sign In
-      </button>
+      <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-yellow-300 mb-2">Don't see the email?</h3>
+        <ul className="text-xs text-yellow-200 space-y-1 text-left">
+          <li>• Check your spam/junk folder</li>
+          <li>• Make sure you entered the correct email address</li>
+          <li>• Wait a few minutes - emails can sometimes be delayed</li>
+          <li>• Try sending another reset link if needed</li>
+        </ul>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          onClick={() => {
+            setStep('email');
+            setEmail('');
+            setError(null);
+          }}
+          className="w-full bg-gray-700 text-white py-3 rounded-lg font-medium hover:bg-gray-600 active:scale-95 transition-all"
+        >
+          Send Another Reset Link
+        </button>
+        
+        <button
+          onClick={onBack}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all"
+        >
+          Back to Sign In
+        </button>
+      </div>
     </div>
   );
 
@@ -336,13 +186,11 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
           {/* Form Container */}
           <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
             {step === 'email' && renderEmailStep()}
-            {step === 'otp' && renderOtpStep()}
-            {step === 'newPassword' && renderNewPasswordStep()}
             {step === 'success' && renderSuccessStep()}
           </div>
 
           {/* Help Text */}
-          {step !== 'success' && (
+          {step === 'email' && (
             <div className="mt-6 text-center pb-8">
               <p className="text-xs text-gray-500">
                 Remember your password?{' '}
