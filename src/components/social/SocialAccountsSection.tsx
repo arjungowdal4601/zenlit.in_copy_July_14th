@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { User, SocialProvider } from '../../types';
 import { SocialLinkModal } from './SocialLinkModal';
 import { 
@@ -15,7 +15,12 @@ interface Props {
   onUserUpdate: (updatedUser: User) => void;
 }
 
-export const SocialAccountsSection: React.FC<Props> = ({ user, onUserUpdate }) => {
+// NEW: Add ref interface for external access
+export interface SocialAccountsSectionRef {
+  openPlatformModal: (platformId: string) => void;
+}
+
+export const SocialAccountsSection = forwardRef<SocialAccountsSectionRef, Props>(({ user, onUserUpdate }, ref) => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -60,6 +65,14 @@ export const SocialAccountsSection: React.FC<Props> = ({ user, onUserUpdate }) =
       getIsVerified: () => !!user.twitterUrl // Changed from twitterVerified to just check if URL exists
     }
   ];
+
+  // NEW: Expose method to open specific platform modal
+  useImperativeHandle(ref, () => ({
+    openPlatformModal: (platformId: string) => {
+      console.log(`🔍 [SocialAccountsSection] Opening modal for platform: ${platformId}`);
+      setActiveModal(platformId);
+    }
+  }));
 
   const handleSaveLink = async (providerId: string, url: string) => {
     console.log(`🔍 [SocialAccountsSection] handleSaveLink called for ${providerId} with URL: "${url}"`);
@@ -208,4 +221,6 @@ export const SocialAccountsSection: React.FC<Props> = ({ user, onUserUpdate }) =
       ))}
     </div>
   );
-};
+});
+
+SocialAccountsSection.displayName = 'SocialAccountsSection';

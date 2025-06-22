@@ -12,9 +12,10 @@ interface Props {
   user: User;
   onBack: () => void;
   onSave: (updatedUser: User) => void;
+  initialPlatform?: string | null; // NEW: Platform to auto-open modal for
 }
 
-export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => {
+export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initialPlatform }) => {
   const [formData, setFormData] = useState({
     name: user.name,
     bio: user.bio,
@@ -32,13 +33,15 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => 
 
   const profileFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const socialAccountsSectionRef = useRef<any>(null);
 
   console.log(`🔍 [EditProfileScreen] Component initialized with user:`, {
     id: user.id,
     name: user.name,
     instagramUrl: user.instagramUrl,
     linkedInUrl: user.linkedInUrl,
-    twitterUrl: user.twitterUrl
+    twitterUrl: user.twitterUrl,
+    initialPlatform: initialPlatform
   });
 
   console.log(`🔍 [EditProfileScreen] Initial formData:`, formData);
@@ -64,6 +67,19 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => 
       }
     })();
   }, []);
+
+  // NEW: Auto-open specific platform modal when initialPlatform is provided
+  useEffect(() => {
+    if (initialPlatform && socialAccountsSectionRef.current) {
+      console.log(`🔍 [EditProfileScreen] Auto-opening modal for platform: ${initialPlatform}`);
+      // Small delay to ensure the SocialAccountsSection is fully rendered
+      setTimeout(() => {
+        if (socialAccountsSectionRef.current && socialAccountsSectionRef.current.openPlatformModal) {
+          socialAccountsSectionRef.current.openPlatformModal(initialPlatform);
+        }
+      }, 100);
+    }
+  }, [initialPlatform]);
 
   const handleInputChange = (field: string, value: string) => {
     console.log(`🔍 [EditProfileScreen] handleInputChange - field: ${field}, value: "${value}"`);
@@ -438,7 +454,11 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => 
           </div>
         </div>
 
-        <SocialAccountsSection user={{ ...user, ...formData }} onUserUpdate={handleUserUpdate} />
+        <SocialAccountsSection 
+          ref={socialAccountsSectionRef}
+          user={{ ...user, ...formData }} 
+          onUserUpdate={handleUserUpdate} 
+        />
       </div>
 
       {/* Hidden file inputs */}

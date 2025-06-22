@@ -28,6 +28,7 @@ export const ProfileScreen: React.FC<Props> = ({
   const [profileData, setProfileData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [editProfileInitialPlatform, setEditProfileInitialPlatform] = useState<string | null>(null);
   
   // Determine if viewing own profile or another user's profile
   const isCurrentUser = !user || (currentUser && user?.id === currentUser.id);
@@ -130,13 +131,15 @@ export const ProfileScreen: React.FC<Props> = ({
     setShowPostsGallery(false);
   };
 
-  const handleEditProfile = () => {
+  const handleEditProfile = (initialPlatform?: string) => {
     setShowSettingsMenu(false);
+    setEditProfileInitialPlatform(initialPlatform || null);
     setShowEditProfile(true);
   };
 
   const handleBackFromEdit = () => {
     setShowEditProfile(false);
+    setEditProfileInitialPlatform(null);
   };
 
   const handleSaveProfile = async (updatedProfile: any) => {
@@ -171,6 +174,7 @@ export const ProfileScreen: React.FC<Props> = ({
       // Update local state
       setProfileData(savedProfile);
       setShowEditProfile(false);
+      setEditProfileInitialPlatform(null);
       
     } catch (error) {
       console.error('Save profile error:', error);
@@ -222,8 +226,9 @@ export const ProfileScreen: React.FC<Props> = ({
       // Open the social media URL
       window.open(url, '_blank', 'noopener,noreferrer');
     } else if (isCurrentUser) {
-      // For current user with no URL, go to edit profile
-      handleEditProfile();
+      // For current user with no URL, go directly to edit profile with specific platform
+      console.log(`Opening edit profile for platform: ${platform}`);
+      handleEditProfile(platform);
     }
     // For other users with no URL, do nothing (icon won't be shown anyway)
   };
@@ -274,6 +279,7 @@ export const ProfileScreen: React.FC<Props> = ({
         user={profileData}
         onBack={handleBackFromEdit}
         onSave={handleSaveProfile}
+        initialPlatform={editProfileInitialPlatform}
       />
     );
   }
@@ -334,7 +340,7 @@ export const ProfileScreen: React.FC<Props> = ({
                 {showSettingsMenu && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden z-50">
                     <button
-                      onClick={handleEditProfile}
+                      onClick={() => handleEditProfile()}
                       className="w-full flex items-center px-4 py-3 text-left text-white hover:bg-gray-800 active:bg-gray-700 transition-colors"
                     >
                       <UserIcon className="w-5 h-5 mr-3 text-gray-400" />
@@ -398,7 +404,7 @@ export const ProfileScreen: React.FC<Props> = ({
             {profileData.bio || 'No bio available'}
           </p>
           
-          {/* Social Media Icons - NEW IMPLEMENTATION */}
+          {/* Social Media Icons - UPDATED: Direct platform access */}
           <div className="flex justify-center gap-6 mt-6">
             {socialPlatforms.map((platform) => {
               const hasUrl = isValidUrl(platform.url);
