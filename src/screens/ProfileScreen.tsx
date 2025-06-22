@@ -444,9 +444,13 @@ export const ProfileScreen: React.FC<Props> = ({
         {/* Posts Section - UPDATED: Show appropriate posts based on profile type */}
         <div className="mt-10">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">
+{/*             <h2 className="text-xl font-semibold text-white">
               {isCurrentUser ? 'My Posts' : <>{profileData.name}&apos;s Posts</>}
+            </h2> */}
+            <h2 className="text-xl font-semibold text-white">
+              {isCurrentUser ? 'My Posts' : `${profileData.name}'s Posts`}
             </h2>
+
 
             {userPosts.length > 0 && (
               <span className="text-sm text-gray-400">
