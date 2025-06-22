@@ -13,16 +13,37 @@ interface Props {
 export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    loadPosts();
+    loadCurrentUserAndPosts();
   }, []);
 
-  const loadPosts = async () => {
+  const loadCurrentUserAndPosts = async () => {
     try {
+      // Get current user ID first
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Error getting current user:', userError);
+        setIsLoading(false);
+        return;
+      }
+
+      setCurrentUserId(user.id);
+      console.log('Current user ID:', user.id);
+
+      // Load all posts
       const allPosts = await getAllPosts(50);
-      setPosts(allPosts);
+      console.log('All posts loaded:', allPosts.length);
+      
+      // Filter out current user's posts - only show posts from other users
+      const otherUsersPosts = allPosts.filter(post => post.userId !== user.id);
+      console.log('Posts from other users:', otherUsersPosts.length);
+      console.log('Filtered out posts from current user:', allPosts.length - otherUsersPosts.length);
+      
+      setPosts(otherUsersPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
     } finally {
@@ -106,7 +127,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
         </div>
       </div>
 
-      {/* Posts Feed */}
+      {/* Posts Feed - Only showing posts from other users */}
       <div className="px-4 py-4 space-y-6 pb-20">
         {posts.length > 0 ? (
           <PostsFeed posts={posts} onUserClick={handleUserClick} />
@@ -117,8 +138,13 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <p className="text-gray-400 mb-2">No posts yet</p>
-            <p className="text-gray-500 text-sm">Create your first post to get started!</p>
+            <p className="text-gray-400 mb-2">No posts from other users yet</p>
+            <p className="text-gray-500 text-sm">
+              {currentUserId ? 
+                "When other users create posts, they'll appear here!" : 
+                "Posts from the community will appear here!"
+              }
+            </p>
           </div>
         )}
       </div>
