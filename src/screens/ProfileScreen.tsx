@@ -445,7 +445,7 @@ export const ProfileScreen: React.FC<Props> = ({
         <div className="mt-10">
           <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">
-            {isCurrentUser ? 'My Posts' : `${profileData.name} Posts`}
+            {isCurrentUser ? 'My Posts' : `${profileData.name}&#39;s Posts`}
           </h2>
 
 
