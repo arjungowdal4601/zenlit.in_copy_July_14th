@@ -154,7 +154,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     }
   };
 
-  // SIGNUP STEP 3: Set password
+  // SIGNUP STEP 3: Set password (CRITICAL FOR FUTURE LOGINS)
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -177,11 +177,11 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      console.log('Setting password for authenticated user');
+      console.log('Setting password for authenticated user - this will be used for future logins');
       const result = await setUserPassword(formData.password);
       
       if (result.success) {
-        console.log('Password set successfully');
+        console.log('Password set successfully - user can now login with email/password');
         setSignupStep('complete');
         // Auto-proceed to app after a short delay
         setTimeout(() => {
@@ -312,14 +312,14 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                 {currentView === 'login' ? 'Welcome Back' : 
                  signupStep === 'email' ? 'Create Account' :
                  signupStep === 'otp' ? 'Verify Email' :
-                 signupStep === 'password' ? 'Set Password' :
+                 signupStep === 'password' ? 'Set Your Password' :
                  'Account Created!'}
               </h2>
               <p className="text-gray-400 text-center mt-2">
                 {currentView === 'login' ? 'Sign in with your email and password' : 
                  signupStep === 'email' ? 'Enter your email to get started' :
                  signupStep === 'otp' ? `We sent a code to ${formData.email}` :
-                 signupStep === 'password' ? 'Choose a secure password' :
+                 signupStep === 'password' ? 'This password will be used for future logins' :
                  'Welcome to Zenlit!'}
               </p>
             </div>
@@ -492,7 +492,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                   </div>
                 )}
 
-                {/* STEP 3: Set Password */}
+                {/* STEP 3: Set Password (CRITICAL FOR FUTURE LOGINS) */}
                 {signupStep === 'password' && (
                   <form onSubmit={handleSetPassword} className="space-y-4">
                     <div className="bg-green-900/30 border border-green-700 rounded-lg p-3 mb-4">
@@ -504,9 +504,15 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                       </div>
                     </div>
 
+                    <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 mb-4">
+                      <p className="text-blue-300 text-sm">
+                        <strong>Important:</strong> This password will be used for all future logins to your account.
+                      </p>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Password
+                        Create Password
                       </label>
                       <div className="relative">
                         <input
@@ -514,7 +520,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                           value={formData.password}
                           onChange={(e) => handleInputChange('password', e.target.value)}
                           className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
-                          placeholder="Create a password"
+                          placeholder="Create a secure password"
                           required
                           minLength={6}
                         />
@@ -572,7 +578,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                           Setting Password...
                         </>
                       ) : (
-                          "Set Password"
+                          "Set Password & Complete Signup"
                       )}
                     </button>
                   </form>
@@ -586,7 +592,7 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                     </div>
                     <h3 className="text-xl font-bold text-white">Account Created!</h3>
                     <p className="text-gray-400">
-                        Your account has been successfully created. You&apos;ll be redirected to complete your profile setup.
+                      Your account has been successfully created with password authentication. You can now sign in anytime using your email and password.
                     </p>
                     <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
                   </div>

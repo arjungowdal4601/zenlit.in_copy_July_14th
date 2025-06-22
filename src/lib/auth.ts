@@ -24,6 +24,20 @@ export const sendSignupOTP = async (email: string): Promise<AuthResponse> => {
   try {
     console.log('Sending signup OTP to:', email)
     
+    // First check if user already exists with a password
+    const { data: existingUser, error: userCheckError } = await supabase!.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: 'dummy-password-check' // This will fail but tell us if user exists
+    })
+
+    // If no error about invalid credentials, user might already exist
+    if (!userCheckError || !userCheckError.message.includes('Invalid login credentials')) {
+      return { 
+        success: false, 
+        error: 'An account with this email already exists. Please sign in instead or use "Forgot password?" if you need to reset your password.' 
+      }
+    }
+
     const { data, error } = await supabase!.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
