@@ -332,36 +332,182 @@ export const signInWithPassword = async (email: string, password: string): Promi
   }
 }
 
-// FORGOT PASSWORD: Send reset email
-export const sendPasswordReset = async (email: string): Promise<AuthResponse> => {
+// PASSWORD RESET FLOW: Similar to signup but for existing users
+
+// RESET STEP 1: Send OTP for password reset
+export const sendPasswordResetOTP = async (email: string): Promise<AuthResponse> => {
   if (!isSupabaseAvailable()) {
     return { success: false, error: 'Service temporarily unavailable' }
   }
 
   try {
-    console.log('Sending password reset to:', email)
+    console.log('Sending password reset OTP to:', email)
     
-    const { error } = await supabase!.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
-      {
-        redirectTo: `${window.location.origin}/reset-password`
+    const { data, error } = await supabase!.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: {
+        shouldCreateUser: false, // Don't create new users for password reset
+        data: {
+          password_reset_flow: true // Mark this as password reset flow
+        }
       }
-    )
+    })
 
     if (error) {
-      console.error('Password reset error:', error.message)
+      console.error('Password reset OTP send error:', error.message)
+      
+      if (error.message.includes('User not found')) {
+        return { 
+          success: false, 
+          error: 'No account found with this email address. Please check your email or sign up for a new account.' 
+        }
+      }
+      
+      if (error.message.includes('rate limit')) {
+        return { 
+          success: false, 
+          error: 'Too many requests. Please wait before requesting another code.' 
+        }
+      }
+      
       return { success: false, error: error.message }
     }
 
-    console.log('Password reset email sent successfully')
-    return { success: true }
+    console.log('Password reset OTP sent successfully')
+    return { success: true, data }
   } catch (error) {
-    console.error('Password reset catch error:', error)
+    console.error('Password reset OTP send catch error:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Failed to send reset email' 
+      error: error instanceof Error ? error.message : 'Failed to send reset code' 
     }
   }
+}
+
+// RESET STEP 2: Verify OTP for password reset
+export const verifyPasswordResetOTP = async (email: string, token: string): Promise<AuthResponse> => {
+  if (!isSupabaseAvailable()) {
+    return { success: false, error: 'Service temporarily unavailable' }
+  }
+
+  try {
+    console.log('Verifying password reset OTP for:', email)
+    
+    const { data, error } = await supabase!.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: token,
+      type: 'email'
+    })
+
+    if (error) {
+      console.error('Password reset OTP verify error:', error.message)
+      
+      if (error.message.includes('expired')) {
+        return { 
+          success: false, 
+          error: 'Verification code has expired. Please request a new one.' 
+        }
+      }
+      
+      if (error.message.includes('invalid')) {
+        return { 
+          success: false, 
+          error: 'Invalid verification code. Please check and try again.' 
+        }
+      }
+      
+      return { success: false, error: error.message }
+    }
+
+    if (!data.user || !data.session) {
+      return { success: false, error: 'Verification failed. Please try again.' }
+    }
+
+    // Ensure session is properly stored
+    if (data.session) {
+      await supabase!.auth.setSession(data.session)
+    }
+
+    console.log('Password reset OTP verified successfully for user:', data.user.id)
+    return { success: true, data }
+  } catch (error) {
+    console.error('Password reset OTP verify catch error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to verify code' 
+    }
+  }
+}
+
+// RESET STEP 3: Set new password after OTP verification
+export const setNewPassword = async (newPassword: string): Promise<AuthResponse> => {
+  if (!isSupabaseAvailable()) {
+    return { success: false, error: 'Service temporarily unavailable' }
+  }
+
+  try {
+    console.log('Setting new password for authenticated user')
+    
+    // Ensure we have a valid session first
+    const sessionResult = await ensureSession()
+    if (!sessionResult.success) {
+      return { success: false, error: 'Please verify your email first' }
+    }
+
+    // Update user password
+    const { data, error } = await supabase!.auth.updateUser({
+      password: newPassword
+    })
+
+    if (error) {
+      console.error('New password set error:', error.message)
+      
+      if (error.message.includes('Password should be at least')) {
+        return { 
+          success: false, 
+          error: 'Password must be at least 6 characters long.' 
+        }
+      }
+      
+      return { success: false, error: error.message }
+    }
+
+    // Clear the password_reset_flow flag after password is set
+    console.log('New password set successfully, clearing password_reset_flow flag...')
+    const { error: metadataError } = await supabase!.auth.updateUser({
+      data: { password_reset_flow: false }
+    })
+
+    if (metadataError) {
+      console.error('Failed to clear password_reset_flow flag:', metadataError)
+      // Don't fail the whole operation for this
+    } else {
+      console.log('Password reset flow flag cleared')
+    }
+
+    // Ensure session is maintained after password update
+    if (data.user) {
+      const { data: sessionData } = await supabase!.auth.getSession()
+      if (sessionData.session) {
+        await supabase!.auth.setSession(sessionData.session)
+      }
+    }
+
+    console.log('New password set successfully for user:', data.user?.id)
+    return { success: true, data }
+  } catch (error) {
+    console.error('New password set catch error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to set new password' 
+    }
+  }
+}
+
+// FORGOT PASSWORD: Send reset email (DEPRECATED - use OTP flow instead)
+export const sendPasswordReset = async (email: string): Promise<AuthResponse> => {
+  // Redirect to OTP-based flow
+  return await sendPasswordResetOTP(email)
 }
 
 // UTILITY: Sign out

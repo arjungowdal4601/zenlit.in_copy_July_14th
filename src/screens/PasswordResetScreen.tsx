@@ -1,28 +1,58 @@
-import React, { useState } from 'react';
-import { ChevronLeftIcon, CheckCircleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import { sendPasswordReset } from '../lib/auth';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeftIcon, CheckCircleIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { sendPasswordResetOTP, verifyPasswordResetOTP, setNewPassword } from '../lib/auth';
 
 interface Props {
   onBack: () => void;
 }
 
 export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
-  const [step, setStep] = useState<'email' | 'success'>('email');
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState<'email' | 'otp' | 'newPassword' | 'success'>('email');
+  const [formData, setFormData] = useState({
+    email: '',
+    otp: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [otpCountdown, setOtpCountdown] = useState(0);
 
-  const handleSendResetCode = async (e: React.FormEvent) => {
+  // Countdown timer effect for OTP resend
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpCountdown > 0) {
+      timer = setTimeout(() => {
+        setOtpCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear errors when user starts typing
+    if (error) setError(null);
+  };
+
+  // STEP 1: Send OTP for password reset
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim()) {
+    if (!formData.email.trim()) {
       setError('Please enter your email address');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
       return;
     }
@@ -30,18 +60,114 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
     setIsLoading(true);
 
     try {
-      console.log('Sending password reset email to:', email);
-      const result = await sendPasswordReset(email);
+      console.log('Sending password reset OTP to:', formData.email);
+      const result = await sendPasswordResetOTP(formData.email);
       
       if (result.success) {
-        console.log('Password reset email sent successfully');
-        setStep('success');
+        console.log('Password reset OTP sent successfully');
+        setStep('otp');
+        setOtpCountdown(60); // Start 60 second countdown
       } else {
-        console.error('Password reset failed:', result.error);
-        setError(result.error || 'Failed to send reset email');
+        console.error('Password reset OTP send failed:', result.error);
+        setError(result.error || 'Failed to send verification code');
       }
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error('Password reset OTP send error:', error);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // STEP 2: Verify OTP
+  const handleVerifyOTP = async () => {
+    setError(null);
+
+    if (!formData.otp || formData.otp.length !== 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      console.log('Verifying password reset OTP for:', formData.email);
+      const result = await verifyPasswordResetOTP(formData.email, formData.otp);
+      
+      if (result.success) {
+        console.log('Password reset OTP verified successfully');
+        setStep('newPassword');
+      } else {
+        console.error('Password reset OTP verification failed:', result.error);
+        setError(result.error || 'Invalid verification code');
+      }
+    } catch (error) {
+      console.error('Password reset OTP verification error:', error);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // STEP 3: Set new password
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!formData.newPassword || !formData.confirmPassword) {
+      setError('Please fill in all password fields');
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (formData.newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      console.log('Setting new password for user');
+      const result = await setNewPassword(formData.newPassword);
+      
+      if (result.success) {
+        console.log('New password set successfully');
+        setStep('success');
+      } else {
+        console.error('New password set failed:', result.error);
+        setError(result.error || 'Failed to set new password');
+      }
+    } catch (error) {
+      console.error('New password set error:', error);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const handleResendOTP = async () => {
+    if (otpCountdown > 0) return;
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const result = await sendPasswordResetOTP(formData.email);
+      
+      if (result.success) {
+        setOtpCountdown(60);
+        // Clear the OTP field
+        setFormData(prev => ({ ...prev, otp: '' }));
+      } else {
+        setError(result.error || 'Failed to resend code');
+      }
+    } catch (error) {
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -56,26 +182,19 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">Reset Password</h2>
         <p className="text-gray-400">
-          Enter your email address and we'll send you a link to reset your password
+          Enter your email address and we'll send you a verification code
         </p>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-3">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
-
-      <form onSubmit={handleSendResetCode}>
+      <form onSubmit={handleSendOTP}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Email Address
           </label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
             className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your email address"
             required
@@ -85,29 +204,178 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
 
         <button
           type="submit"
-          disabled={isLoading || !email.trim()}
+          disabled={isLoading || !formData.email.trim()}
           className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Sending Reset Link...
+              Sending Code...
             </>
           ) : (
-            "Send Reset Link"
+            "Send Verification Code"
           )}
         </button>
       </form>
+    </div>
+  );
 
-      <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-300 mb-2">What happens next?</h3>
-        <ul className="text-xs text-blue-200 space-y-1">
-          <li>• We'll send a secure reset link to your email</li>
-          <li>• Click the link to open a new password creation page</li>
-          <li>• Create your new password</li>
-          <li>• Return to the app and sign in with your new password</li>
-        </ul>
+  const renderOtpStep = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircleIcon className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
+        <p className="text-gray-400">
+          We've sent a 6-digit code to <span className="text-white">{formData.email}</span>
+        </p>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Verification Code
+        </label>
+        <input
+          type="text"
+          value={formData.otp}
+          onChange={(e) => {
+            const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+            handleInputChange('otp', value);
+          }}
+          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center tracking-widest text-lg"
+          placeholder="000000"
+          maxLength={6}
+          disabled={isLoading}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Enter the 6-digit code sent to your email
+        </p>
+      </div>
+
+      <button
+        onClick={handleVerifyOTP}
+        disabled={isLoading || formData.otp.length !== 6}
+        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {isLoading ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Verifying...
+          </>
+        ) : (
+          "Verify Code"
+        )}
+      </button>
+
+      <div className="text-center">
+        <p className="text-gray-400 text-sm">
+          Didn't receive the code?{' '}
+          <button
+            onClick={handleResendOTP}
+            disabled={otpCountdown > 0 || isLoading}
+            className="text-blue-400 hover:text-blue-300 transition-colors disabled:text-gray-500 disabled:cursor-not-allowed"
+          >
+            {otpCountdown > 0 ? `Resend in ${otpCountdown}s` : 'Resend Code'}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderNewPasswordStep = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Create New Password</h2>
+        <p className="text-gray-400">
+          Choose a strong password for your account
+        </p>
+      </div>
+
+      <form onSubmit={handleSetNewPassword}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              New Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={formData.newPassword}
+                onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                placeholder="Enter new password"
+                required
+                minLength={6}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Confirm New Password
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                placeholder="Confirm new password"
+                required
+                minLength={6}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                {showConfirmPassword ? (
+                  <EyeSlashIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <button
+            type="submit"
+            disabled={isLoading || !formData.newPassword || !formData.confirmPassword}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Setting Password...
+              </>
+            ) : (
+              "Set New Password"
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 
@@ -116,48 +384,17 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
       <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
         <CheckCircleIcon className="w-10 h-10 text-white" />
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Check Your Email!</h2>
-      <div className="space-y-4">
-        <p className="text-gray-300">
-          We've sent a password reset link to:
-        </p>
-        <div className="bg-gray-800 rounded-lg p-3">
-          <p className="text-blue-400 font-medium">{email}</p>
-        </div>
-        <p className="text-gray-400 text-sm">
-          Click the link in the email to reset your password. The link will expire in 1 hour for security.
-        </p>
-      </div>
+      <h2 className="text-2xl font-bold text-white mb-2">Password Reset Successful!</h2>
+      <p className="text-gray-400 mb-6">
+        Your password has been successfully reset. You can now sign in with your new password.
+      </p>
       
-      <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-yellow-300 mb-2">Don't see the email?</h3>
-        <ul className="text-xs text-yellow-200 space-y-1 text-left">
-          <li>• Check your spam/junk folder</li>
-          <li>• Make sure you entered the correct email address</li>
-          <li>• Wait a few minutes - emails can sometimes be delayed</li>
-          <li>• Try sending another reset link if needed</li>
-        </ul>
-      </div>
-
-      <div className="space-y-3">
-        <button
-          onClick={() => {
-            setStep('email');
-            setEmail('');
-            setError(null);
-          }}
-          className="w-full bg-gray-700 text-white py-3 rounded-lg font-medium hover:bg-gray-600 active:scale-95 transition-all"
-        >
-          Send Another Reset Link
-        </button>
-        
-        <button
-          onClick={onBack}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all"
-        >
-          Back to Sign In
-        </button>
-      </div>
+      <button
+        onClick={onBack}
+        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all"
+      >
+        Back to Sign In
+      </button>
     </div>
   );
 
@@ -185,12 +422,21 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
 
           {/* Form Container */}
           <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 bg-red-900/30 border border-red-700 rounded-lg p-3">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             {step === 'email' && renderEmailStep()}
+            {step === 'otp' && renderOtpStep()}
+            {step === 'newPassword' && renderNewPasswordStep()}
             {step === 'success' && renderSuccessStep()}
           </div>
 
           {/* Help Text */}
-          {step === 'email' && (
+          {step !== 'success' && (
             <div className="mt-6 text-center pb-8">
               <p className="text-xs text-gray-500">
                 Remember your password?{' '}
