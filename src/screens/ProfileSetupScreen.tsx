@@ -134,18 +134,27 @@ export const ProfileSetupScreen: React.FC<Props> = ({ onComplete, onBack }) => {
         throw new Error(usernameResult.error || 'Failed to reserve username');
       }
 
-      let profilePhotoUrl = null;
+      let profilePhotoUrl: string | null = null;
 
       // Handle profile photo upload if a new photo was selected
       if (profileData.profilePhoto && profileData.profilePhoto.startsWith('data:')) {
         console.log('Uploading profile photo...');
-        profilePhotoUrl = await uploadProfileImage(user.id, profileData.profilePhoto);
         
-        if (!profilePhotoUrl) {
+        // FIXED: Properly handle the upload response object
+        const uploadResult = await uploadProfileImage(user.id, profileData.profilePhoto);
+        
+        if (uploadResult && typeof uploadResult === 'string') {
+          // If uploadResult is a string, it's the URL
+          profilePhotoUrl = uploadResult;
+          console.log('Profile photo uploaded successfully:', profilePhotoUrl);
+        } else if (uploadResult && typeof uploadResult === 'object' && uploadResult.publicUrl) {
+          // If uploadResult is an object with publicUrl, extract it
+          profilePhotoUrl = uploadResult.publicUrl;
+          console.log('Profile photo uploaded successfully:', profilePhotoUrl);
+        } else {
           // Photo upload failed, but continue with profile creation
           console.warn('Profile photo upload failed, continuing without photo');
-        } else {
-          console.log('Profile photo uploaded successfully:', profilePhotoUrl);
+          profilePhotoUrl = null;
         }
       }
 
@@ -156,7 +165,7 @@ export const ProfileSetupScreen: React.FC<Props> = ({ onComplete, onBack }) => {
         bio: profileData.bio,
         dateOfBirth: profileData.dateOfBirth,
         gender: profileData.gender,
-        profilePhotoUrl: profilePhotoUrl || undefined
+        profilePhotoUrl: profilePhotoUrl || undefined // FIXED: Extract publicUrl properly
       });
 
       if (!result.success) {
