@@ -122,6 +122,16 @@ export default function App() {
   const handleAuthenticatedUser = async (user: any) => {
     try {
       console.log('Handling authenticated user:', user.id);
+      console.log('User metadata:', user.user_metadata);
+
+      // CRITICAL: Check if user is still in signup flow
+      if (user.user_metadata?.signup_flow === true) {
+        console.log('User is still in signup flow - keeping LoginScreen mounted for password setup');
+        setCurrentScreen('login'); // Keep LoginScreen mounted
+        return; // Don't proceed to profile setup yet
+      }
+
+      console.log('User has completed signup flow, proceeding with profile check...');
 
       // Check if user has a profile with proper error handling
       try {

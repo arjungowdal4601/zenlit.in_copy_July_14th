@@ -24,26 +24,12 @@ export const sendSignupOTP = async (email: string): Promise<AuthResponse> => {
   try {
     console.log('Sending signup OTP to:', email)
     
-    // First check if user already exists with a password
-    const { data: existingUser, error: userCheckError } = await supabase!.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password: 'dummy-password-check' // This will fail but tell us if user exists
-    })
-
-    // If no error about invalid credentials, user might already exist
-    if (!userCheckError || !userCheckError.message.includes('Invalid login credentials')) {
-      return { 
-        success: false, 
-        error: 'An account with this email already exists. Please sign in instead or use "Forgot password?" if you need to reset your password.' 
-      }
-    }
-
     const { data, error } = await supabase!.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
         shouldCreateUser: true, // Creates user if they don't exist
         data: {
-          signup_flow: true // Mark this as part of signup flow
+          signup_flow: true // Mark this as part of signup flow - CRITICAL FLAG
         }
       }
     })
@@ -132,6 +118,7 @@ export const verifySignupOTP = async (email: string, token: string): Promise<Aut
     }
 
     console.log('OTP verified successfully, user created:', data.user.id)
+    console.log('User still in signup flow - signup_flow flag:', data.user.user_metadata?.signup_flow)
     return { success: true, data }
   } catch (error) {
     console.error('OTP verify catch error:', error)
@@ -173,6 +160,19 @@ export const setUserPassword = async (password: string): Promise<AuthResponse> =
       }
       
       return { success: false, error: error.message }
+    }
+
+    // CRITICAL: Clear the signup_flow flag after password is set
+    console.log('Password set successfully, clearing signup_flow flag...')
+    const { error: metadataError } = await supabase!.auth.updateUser({
+      data: { signup_flow: false }
+    })
+
+    if (metadataError) {
+      console.error('Failed to clear signup_flow flag:', metadataError)
+      // Don't fail the whole operation for this
+    } else {
+      console.log('Signup flow flag cleared - user can now proceed to profile setup')
     }
 
     // Ensure session is maintained after password update
