@@ -211,6 +211,51 @@ export const ProfileScreen: React.FC<Props> = ({
     return '/images/default-avatar.png';
   };
 
+  // Helper function to check if a URL is valid and not a placeholder
+  const isValidUrl = (url: string | undefined | null): boolean => {
+    return !!(url && url.trim() !== '' && url !== '#');
+  };
+
+  // Helper function to handle social media icon clicks
+  const handleSocialIconClick = (platform: string, url?: string) => {
+    if (isValidUrl(url)) {
+      // Open the social media URL
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (isCurrentUser) {
+      // For current user with no URL, go to edit profile
+      handleEditProfile();
+    }
+    // For other users with no URL, do nothing (icon won't be shown anyway)
+  };
+
+  // Social media platforms configuration
+  const socialPlatforms = [
+    {
+      id: 'twitter',
+      name: 'X (Twitter)',
+      icon: IconBrandX,
+      url: profileData?.twitter_url,
+      color: 'text-gray-400', // Grey when no URL
+      activeColor: 'text-blue-400' // Blue when has URL
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      icon: IconBrandInstagram,
+      url: profileData?.instagram_url,
+      color: 'text-gray-400', // Grey when no URL
+      activeColor: 'text-pink-400' // Pink when has URL
+    },
+    {
+      id: 'linkedin',
+      name: 'LinkedIn',
+      icon: IconBrandLinkedin,
+      url: profileData?.linked_in_url,
+      color: 'text-gray-400', // Grey when no URL
+      activeColor: 'text-blue-500' // LinkedIn blue when has URL
+    }
+  ];
+
   // Show loading state
   if (isLoading || !profileData) {
     return (
@@ -222,11 +267,6 @@ export const ProfileScreen: React.FC<Props> = ({
       </div>
     );
   }
-
-  // Helper function to check if a URL is valid and not a placeholder
-  const isValidUrl = (url: string | undefined | null): boolean => {
-    return !!(url && url.trim() !== '' && url !== '#');
-  };
 
   if (showEditProfile) {
     return (
@@ -358,38 +398,40 @@ export const ProfileScreen: React.FC<Props> = ({
             {profileData.bio || 'No bio available'}
           </p>
           
-          {/* Social Links - Only show icons if URLs are valid */}
-          <div className="flex justify-center gap-8 mt-8">
-            {isValidUrl(profileData.twitter_url) && (
-              <a
-                href={profileData.twitter_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-3 bg-gray-800 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-all active:scale-95"
-              >
-                <IconBrandX size={24} />
-              </a>
-            )}
-            {isValidUrl(profileData.instagram_url) && (
-              <a
-                href={profileData.instagram_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-3 bg-gray-800 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-all active:scale-95"
-              >
-                <IconBrandInstagram size={24} />
-              </a>
-            )}
-            {isValidUrl(profileData.linked_in_url) && (
-              <a
-                href={profileData.linked_in_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-3 bg-gray-800 rounded-full text-gray-300 hover:text-white hover:bg-gray-700 transition-all active:scale-95"
-              >
-                <IconBrandLinkedin size={24} />
-              </a>
-            )}
+          {/* Social Media Icons - NEW IMPLEMENTATION */}
+          <div className="flex justify-center gap-6 mt-6">
+            {socialPlatforms.map((platform) => {
+              const hasUrl = isValidUrl(platform.url);
+              
+              // For other users, only show icons if they have URLs
+              if (!isCurrentUser && !hasUrl) {
+                return null;
+              }
+              
+              const IconComponent = platform.icon;
+              const iconColor = hasUrl ? platform.activeColor : platform.color;
+              const isClickable = hasUrl || isCurrentUser;
+              
+              return (
+                <button
+                  key={platform.id}
+                  onClick={() => handleSocialIconClick(platform.id, platform.url)}
+                  disabled={!isClickable}
+                  className={`p-3 bg-gray-800 rounded-full transition-all active:scale-95 hover:bg-gray-700 ${
+                    isClickable ? 'cursor-pointer' : 'cursor-default'
+                  } ${iconColor}`}
+                  title={
+                    hasUrl 
+                      ? `Visit ${platform.name}` 
+                      : isCurrentUser 
+                        ? `Add ${platform.name} link` 
+                        : platform.name
+                  }
+                >
+                  <IconComponent size={24} />
+                </button>
+              );
+            })}
           </div>
         </div>
         
