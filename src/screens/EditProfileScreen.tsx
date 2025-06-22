@@ -409,7 +409,7 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
             </button>
             {profileUrl && (
               <button
-                onClick={handleDeleteProfilePhoto}
+                onClick={handleDeleteProfilePhot&aposo}
                 className="bg-red-600 p-2 rounded-full shadow-lg hover:bg-red-700 transition-colors"
                 title="Remove profile photo"
               >
