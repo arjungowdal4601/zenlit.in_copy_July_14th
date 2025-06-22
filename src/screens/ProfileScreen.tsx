@@ -208,6 +208,19 @@ export const ProfileScreen: React.FC<Props> = ({
     return !!(url && url.trim() !== '' && url !== '#');
   };
 
+  // Helper function to get profile photo URL with fallback
+  const getProfilePhotoUrl = () => {
+    const photoUrl = profileData.profile_photo_url || profileData.dpUrl;
+    
+    // If we have a valid photo URL, use it
+    if (photoUrl && photoUrl.trim() !== '' && !photoUrl.includes('undefined')) {
+      return photoUrl;
+    }
+    
+    // Fallback to a default avatar or placeholder
+    return '/images/default-avatar.png';
+  };
+
   if (showEditProfile) {
     return (
       <EditProfileScreen
@@ -297,20 +310,26 @@ export const ProfileScreen: React.FC<Props> = ({
           </div>
         </div>
         
-        {/* Profile Avatar */}
+        {/* Profile Avatar - FIXED */}
         <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2">
           <div className="relative">
-            {profileData.profile_photo_url ? (
-              <img
-                src={profileData.profile_photo_url}
-                alt={profileData.name}
-                className="w-28 h-28 rounded-full border-4 border-black object-cover shadow-xl"
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-full border-4 border-black bg-gray-700 flex items-center justify-center shadow-xl">
+            <img
+              src={getProfilePhotoUrl()}
+              alt={profileData.name || 'Profile'}
+              className="w-28 h-28 rounded-full border-4 border-black object-cover shadow-xl"
+              onError={(e) => {
+                // Fallback if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/default-avatar.png';
+              }}
+            />
+            
+            {/* Show a placeholder icon if no photo */}
+            {!getProfilePhotoUrl() || getProfilePhotoUrl() === '/images/default-avatar.png' ? (
+              <div className="absolute inset-0 w-28 h-28 rounded-full border-4 border-black bg-gray-700 flex items-center justify-center shadow-xl">
                 <UserIcon className="w-12 h-12 text-gray-400" />
               </div>
-            )}
+            ) : null}
           </div>
         </div>
         
