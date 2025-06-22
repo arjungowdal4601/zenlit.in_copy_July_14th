@@ -166,8 +166,9 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => 
     
     setLoading(true);
     try {
-      let newProfileUrl = profileUrl;
-      let newCoverUrl = coverUrl;
+      // FIXED: Allow null values for profile and cover URLs
+      let newProfileUrl: string | null = profileUrl;
+      let newCoverUrl: string | null = coverUrl;
 
       // Handle profile photo deletion when clearing existing image
       if (!profileUrl && user.dpUrl && !user.dpUrl.includes('/images/default-')) {
@@ -176,7 +177,7 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => 
           if (profileFilePath) {
             await supabase.storage.from('avatars').remove([profileFilePath]);
           }
-          newProfileUrl = null;
+          newProfileUrl = null; // FIXED: Now properly typed to allow null
         } catch (deleteErr) {
           console.error('Error deleting old avatar:', deleteErr);
           alert('Failed to delete previous profile photo');
@@ -214,7 +215,7 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave }) => 
           if (coverFilePath) {
             await supabase.storage.from('banner').remove([coverFilePath]);
           }
-          newCoverUrl = null;
+          newCoverUrl = null; // FIXED: Now properly typed to allow null
         } catch (deleteErr) {
           console.error('Error deleting old cover photo:', deleteErr);
           alert('Failed to delete previous cover photo');
