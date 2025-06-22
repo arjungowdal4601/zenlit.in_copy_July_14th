@@ -29,7 +29,7 @@ export const sendSignupOTP = async (email: string): Promise<AuthResponse> => {
       options: {
         shouldCreateUser: true, // Creates user if they don't exist
         data: {
-          signup_flow: true // Mark this as part of signup flow - CRITICAL FLAG
+          signup_flow: true // CRITICAL FLAG - marks user as still in signup process
         }
       }
     })
@@ -136,7 +136,7 @@ export const setUserPassword = async (password: string): Promise<AuthResponse> =
   }
 
   try {
-    console.log('Setting password for authenticated user')
+    console.log('Setting password for authenticated user - this will be used for future logins')
     
     // Ensure we have a valid session first
     const sessionResult = await ensureSession()
