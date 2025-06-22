@@ -20,7 +20,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onGetStarted }) => {
           <img
             src="/logo.png"
             alt="Zenlit"
-            className="w-48 h-48 mx-auto object-contain rounded-lg mb-8"
+            className="w-60 h-60 mx-auto object-contain rounded-lg mb-8"
           />
           
           <h1 className="text-5xl font-bold text-white">Zenlit</h1>
