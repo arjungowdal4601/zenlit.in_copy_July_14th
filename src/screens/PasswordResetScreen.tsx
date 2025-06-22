@@ -79,7 +79,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
     }
   };
 
-  // STEP 2: Verify OTP
+  // STEP 2: Verify OTP (creates temporary session for password reset only)
   const handleVerifyOTP = async () => {
     setError(null);
 
@@ -95,7 +95,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
       const result = await verifyPasswordResetOTP(formData.email, formData.otp);
       
       if (result.success) {
-        console.log('Password reset OTP verified successfully');
+        console.log('Password reset OTP verified successfully - temporary session created');
         setStep('newPassword');
       } else {
         console.error('Password reset OTP verification failed:', result.error);
@@ -109,7 +109,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
     }
   };
 
-  // STEP 3: Set new password
+  // STEP 3: Set new password and sign out user
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -132,11 +132,11 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
     setIsLoading(true);
 
     try {
-      console.log('Setting new password for user');
+      console.log('Setting new password and signing out user');
       const result = await setNewPassword(formData.newPassword);
       
       if (result.success) {
-        console.log('New password set successfully');
+        console.log('New password set successfully - user has been signed out');
         setStep('success');
       } else {
         console.error('New password set failed:', result.error);
@@ -297,6 +297,23 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
         </p>
       </div>
 
+      {/* Important Notice */}
+      <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-blue-300 mb-1">Important</h3>
+            <p className="text-xs text-blue-200">
+              After setting your new password, you'll be signed out and need to log in again with your new password.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <form onSubmit={handleSetNewPassword}>
         <div className="space-y-4">
           <div>
@@ -386,14 +403,26 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
       </div>
       <h2 className="text-2xl font-bold text-white mb-2">Password Reset Successful!</h2>
       <p className="text-gray-400 mb-6">
-        Your password has been successfully reset. You can now sign in with your new password.
+        Your password has been successfully reset. You have been signed out for security. Please sign in with your new password.
       </p>
+      
+      <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-green-300 mb-1">Next Steps</h3>
+            <p className="text-xs text-green-200">
+              Use your new password to sign in to your account. Keep it safe and secure.
+            </p>
+          </div>
+        </div>
+      </div>
       
       <button
         onClick={onBack}
         className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all"
       >
-        Back to Sign In
+        Sign In with New Password
       </button>
     </div>
   );

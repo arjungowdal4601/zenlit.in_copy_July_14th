@@ -332,7 +332,7 @@ export const signInWithPassword = async (email: string, password: string): Promi
   }
 }
 
-// PASSWORD RESET FLOW: Similar to signup but for existing users
+// PASSWORD RESET FLOW: OTP-based password reset (NO AUTO LOGIN)
 
 // RESET STEP 1: Send OTP for password reset
 export const sendPasswordResetOTP = async (email: string): Promise<AuthResponse> => {
@@ -343,15 +343,13 @@ export const sendPasswordResetOTP = async (email: string): Promise<AuthResponse>
   try {
     console.log('Sending password reset OTP to:', email)
     
-    const { data, error } = await supabase!.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        shouldCreateUser: false, // Don't create new users for password reset
-        data: {
-          password_reset_flow: true // Mark this as password reset flow
-        }
+    // Use resetPasswordForEmail instead of signInWithOtp to avoid auto-login
+    const { error } = await supabase!.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      {
+        redirectTo: `${window.location.origin}/reset-password-confirm`
       }
-    })
+    )
 
     if (error) {
       console.error('Password reset OTP send error:', error.message)
@@ -373,8 +371,8 @@ export const sendPasswordResetOTP = async (email: string): Promise<AuthResponse>
       return { success: false, error: error.message }
     }
 
-    console.log('Password reset OTP sent successfully')
-    return { success: true, data }
+    console.log('Password reset email sent successfully')
+    return { success: true }
   } catch (error) {
     console.error('Password reset OTP send catch error:', error)
     return { 
@@ -384,7 +382,7 @@ export const sendPasswordResetOTP = async (email: string): Promise<AuthResponse>
   }
 }
 
-// RESET STEP 2: Verify OTP for password reset
+// RESET STEP 2: Verify OTP for password reset (TEMPORARY SESSION ONLY)
 export const verifyPasswordResetOTP = async (email: string, token: string): Promise<AuthResponse> => {
   if (!isSupabaseAvailable()) {
     return { success: false, error: 'Service temporarily unavailable' }
@@ -393,10 +391,11 @@ export const verifyPasswordResetOTP = async (email: string, token: string): Prom
   try {
     console.log('Verifying password reset OTP for:', email)
     
+    // Use verifyOtp with type 'recovery' for password reset
     const { data, error } = await supabase!.auth.verifyOtp({
       email: email.trim().toLowerCase(),
       token: token,
-      type: 'email'
+      type: 'recovery' // Use 'recovery' type for password reset
     })
 
     if (error) {
@@ -419,16 +418,15 @@ export const verifyPasswordResetOTP = async (email: string, token: string): Prom
       return { success: false, error: error.message }
     }
 
-    if (!data.user || !data.session) {
+    if (!data.user) {
       return { success: false, error: 'Verification failed. Please try again.' }
     }
 
-    // Ensure session is properly stored
-    if (data.session) {
-      await supabase!.auth.setSession(data.session)
-    }
-
+    // IMPORTANT: We have a temporary session for password reset only
+    // This session will be used ONLY to set the new password
     console.log('Password reset OTP verified successfully for user:', data.user.id)
+    console.log('Temporary session created for password reset only')
+    
     return { success: true, data }
   } catch (error) {
     console.error('Password reset OTP verify catch error:', error)
@@ -439,14 +437,14 @@ export const verifyPasswordResetOTP = async (email: string, token: string): Prom
   }
 }
 
-// RESET STEP 3: Set new password after OTP verification
+// RESET STEP 3: Set new password and SIGN OUT (NO AUTO LOGIN)
 export const setNewPassword = async (newPassword: string): Promise<AuthResponse> => {
   if (!isSupabaseAvailable()) {
     return { success: false, error: 'Service temporarily unavailable' }
   }
 
   try {
-    console.log('Setting new password for authenticated user')
+    console.log('Setting new password for user - will sign out after setting password')
     
     // Ensure we have a valid session first
     const sessionResult = await ensureSession()
@@ -472,29 +470,22 @@ export const setNewPassword = async (newPassword: string): Promise<AuthResponse>
       return { success: false, error: error.message }
     }
 
-    // Clear the password_reset_flow flag after password is set
-    console.log('New password set successfully, clearing password_reset_flow flag...')
-    const { error: metadataError } = await supabase!.auth.updateUser({
-      data: { password_reset_flow: false }
-    })
-
-    if (metadataError) {
-      console.error('Failed to clear password_reset_flow flag:', metadataError)
-      // Don't fail the whole operation for this
-    } else {
-      console.log('Password reset flow flag cleared')
-    }
-
-    // Ensure session is maintained after password update
-    if (data.user) {
-      const { data: sessionData } = await supabase!.auth.getSession()
-      if (sessionData.session) {
-        await supabase!.auth.setSession(sessionData.session)
-      }
-    }
-
     console.log('New password set successfully for user:', data.user?.id)
-    return { success: true, data }
+    
+    // CRITICAL: Sign out the user immediately after setting password
+    // This ensures they must log in with their new password
+    console.log('Signing out user - they must log in with new password')
+    
+    const { error: signOutError } = await supabase!.auth.signOut()
+    
+    if (signOutError) {
+      console.error('Sign out error after password reset:', signOutError)
+      // Don't fail the operation if sign out fails
+    } else {
+      console.log('User signed out successfully after password reset')
+    }
+
+    return { success: true, data: { passwordReset: true, mustSignIn: true } }
   } catch (error) {
     console.error('New password set catch error:', error)
     return { 
