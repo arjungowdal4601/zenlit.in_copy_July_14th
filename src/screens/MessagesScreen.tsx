@@ -9,12 +9,14 @@ interface Props {
   selectedUser?: User | null;
   onClearSelectedUser?: () => void;
   onViewProfile?: (user: User) => void;
+  onNavigationVisibilityChange?: (visible: boolean) => void; // New prop to control nav visibility
 }
 
 export const MessagesScreen: React.FC<Props> = ({ 
   selectedUser: initialSelectedUser, 
   onClearSelectedUser,
-  onViewProfile
+  onViewProfile,
+  onNavigationVisibilityChange
 }) => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -33,6 +35,22 @@ export const MessagesScreen: React.FC<Props> = ({
       setSelectedUser(initialSelectedUser);
     }
   }, [initialSelectedUser]);
+
+  // NEW: Control navigation visibility based on chat state
+  useEffect(() => {
+    if (onNavigationVisibilityChange) {
+      // Hide navigation when in 1-on-1 chat on mobile, show when in chat list
+      const shouldShowNavigation = !selectedUser || !isMobile;
+      onNavigationVisibilityChange(shouldShowNavigation);
+    }
+
+    // Cleanup: Always show navigation when component unmounts
+    return () => {
+      if (onNavigationVisibilityChange) {
+        onNavigationVisibilityChange(true);
+      }
+    };
+  }, [selectedUser, isMobile, onNavigationVisibilityChange]);
 
   const loadUsersAndMessages = async () => {
     try {

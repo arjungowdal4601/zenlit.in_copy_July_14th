@@ -23,6 +23,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [isNavigationVisible, setIsNavigationVisible] = useState(true); // NEW: Control navigation visibility
 
   // Ensure we're on the client side before doing anything
   useEffect(() => {
@@ -214,6 +215,7 @@ export default function App() {
     setActiveTab('radar');
     setSelectedUser(null);
     setSelectedChatUser(null);
+    setIsNavigationVisible(true); // Reset navigation visibility
   };
 
   const handleLogout = async () => {
@@ -243,6 +245,11 @@ export default function App() {
 
   const handleNavigateToCreate = () => {
     setActiveTab('create');
+  };
+
+  // NEW: Handle navigation visibility changes from MessagesScreen
+  const handleNavigationVisibilityChange = (visible: boolean) => {
+    setIsNavigationVisible(visible);
   };
 
   // Don't render anything until we're on the client
@@ -316,6 +323,7 @@ export default function App() {
                   selectedUser={selectedChatUser}
                   onClearSelectedUser={() => setSelectedChatUser(null)}
                   onViewProfile={handleViewProfile}
+                  onNavigationVisibilityChange={handleNavigationVisibilityChange}
                 />
               </div>
             )}
@@ -333,60 +341,62 @@ export default function App() {
           </div>
         </main>
 
-        {/* Bottom Navigation - Fixed for mobile */}
-        <nav className="bg-gray-900 border-t border-gray-800 flex-shrink-0 bottom-nav">
-          <div className="flex justify-around items-center py-2 px-4 h-16">
-            <button
-              onClick={() => setActiveTab('radar')}
-              className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
-                activeTab === 'radar' ? 'text-blue-500' : 'text-gray-400'
-              }`}
-            >
-              <UserGroupIcon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Radar</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('feed')}
-              className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
-                activeTab === 'feed' ? 'text-blue-500' : 'text-gray-400'
-              }`}
-            >
-              <Squares2X2Icon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Feed</span>
-            </button>
+        {/* Bottom Navigation - UPDATED: Conditionally visible */}
+        {isNavigationVisible && (
+          <nav className="bg-gray-900 border-t border-gray-800 flex-shrink-0 bottom-nav">
+            <div className="flex justify-around items-center py-2 px-4 h-16">
+              <button
+                onClick={() => setActiveTab('radar')}
+                className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                  activeTab === 'radar' ? 'text-blue-500' : 'text-gray-400'
+                }`}
+              >
+                <UserGroupIcon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Radar</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('feed')}
+                className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                  activeTab === 'feed' ? 'text-blue-500' : 'text-gray-400'
+                }`}
+              >
+                <Squares2X2Icon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Feed</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('create')}
-              className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
-                activeTab === 'create' ? 'text-blue-500' : 'text-gray-400'
-              }`}
-            >
-              <PlusIcon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Create</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('create')}
+                className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                  activeTab === 'create' ? 'text-blue-500' : 'text-gray-400'
+                }`}
+              >
+                <PlusIcon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Create</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('messages')}
-              className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
-                activeTab === 'messages' ? 'text-blue-500' : 'text-gray-400'
-              }`}
-            >
-              <ChatBubbleLeftIcon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Messages</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
-                activeTab === 'profile' ? 'text-blue-500' : 'text-gray-400'
-              }`}
-            >
-              <UserIcon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Profile</span>
-            </button>
-          </div>
-        </nav>
+              <button
+                onClick={() => setActiveTab('messages')}
+                className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                  activeTab === 'messages' ? 'text-blue-500' : 'text-gray-400'
+                }`}
+              >
+                <ChatBubbleLeftIcon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Messages</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`nav-button-mobile flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                  activeTab === 'profile' ? 'text-blue-500' : 'text-gray-400'
+                }`}
+              >
+                <UserIcon className="h-6 w-6 mb-1" />
+                <span className="text-xs font-medium">Profile</span>
+              </button>
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );
