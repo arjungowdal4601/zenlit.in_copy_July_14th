@@ -267,3 +267,83 @@ input, textarea, select {
     height: calc(100dvh - 4rem - env(safe-area-inset-bottom));
   }
 }
+
+/* Modal scroll fixes */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 28rem;
+  margin: 2rem 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure modals work properly on mobile */
+@media screen and (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 1rem;
+  }
+  
+  .modal-content {
+    margin: 1rem 0;
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+/* Fix for modal backdrop scroll */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 40;
+}
+
+/* Prevent body scroll when modal is open */
+.modal-open {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Touch scroll improvements */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Smooth scrolling for better UX */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
