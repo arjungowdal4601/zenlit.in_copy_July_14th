@@ -182,7 +182,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">Reset Password</h2>
         <p className="text-gray-400">
-          Enter your email address and we'll send you a verification code
+          Enter your email address and we will send you a verification code
         </p>
       </div>
 
@@ -228,7 +228,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
         <p className="text-gray-400">
-          We've sent a 6-digit code to <span className="text-white">{formData.email}</span>
+          We have sent a 6-digit code to <span className="text-white">{formData.email}</span>
         </p>
       </div>
 
@@ -270,7 +270,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
 
       <div className="text-center">
         <p className="text-gray-400 text-sm">
-          Didn't receive the code?{' '}
+          Did not receive the code?{' '}
           <button
             onClick={handleResendOTP}
             disabled={otpCountdown > 0 || isLoading}
@@ -308,7 +308,7 @@ export const PasswordResetScreen: React.FC<Props> = ({ onBack }) => {
           <div>
             <h3 className="text-sm font-medium text-blue-300 mb-1">Important</h3>
             <p className="text-xs text-blue-200">
-              After setting your new password, you'll be signed out and need to log in again with your new password.
+              After setting your new password, you will be signed out and need to log in again with your new password.
             </p>
           </div>
         </div>
