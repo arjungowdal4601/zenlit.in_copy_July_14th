@@ -321,9 +321,10 @@ export const getNearbyUsers = async (
     console.log('🔍 LOCATION DEBUG: Final processed users:', usersWithDistance);
     console.log('🔍 LOCATION DEBUG: Final user count:', usersWithDistance.length);
 
-    usersWithDistance.forEach((user, index) => {
+    usersWithDistance.forEach((user: DatabaseUser, index) => {
       console.log(`📋 Final user ${index + 1}: ${user.name} - same location bucket (distance: ${user.distance_km}km)`);
     });
+
 
     return {
       success: true,
