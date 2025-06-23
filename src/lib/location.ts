@@ -274,18 +274,45 @@ export const getNearbyUsers = async (
 
     console.log('📍 Rounded coordinates for RPC call:', { latRounded, lonRounded });
 
-    // Use the database RPC function with correct parameter order
-    const { data: users, error } = await supabase
+    // First, let's try the direct database query to debug
+    console.log('🔍 DEBUG: Testing direct database query first...');
+    const { data: directProfiles, error: directError } = await supabase
+      .from('profiles')
+      .select('*')
+      .neq('id', currentUserId)
+      .not('name', 'is', null)
+      .eq('latitude', latRounded)
+      .eq('longitude', lonRounded)
+      .limit(limit);
+
+    console.log('🔍 DEBUG: Direct query result:', { directProfiles, directError });
+    console.log('🔍 DEBUG: Found', directProfiles?.length || 0, 'profiles with direct query');
+
+    // Now try the RPC function
+    console.log('🔍 DEBUG: Testing RPC function...');
+    const { data: rpcUsers, error: rpcError } = await supabase
       .rpc('get_users_in_location_bucket', {
         current_user_id: currentUserId,
         user_lat: latRounded,
         user_lng: lonRounded
       });
 
-    console.log('🔍 LOCATION DEBUG: RPC response:', { users, error });
+    console.log('🔍 DEBUG: RPC result:', { rpcUsers, rpcError });
+
+    // Use direct query result if RPC fails
+    let users = rpcUsers;
+    let error = rpcError;
+
+    if (rpcError || !rpcUsers) {
+      console.log('🔍 DEBUG: RPC failed, falling back to direct query');
+      users = directProfiles;
+      error = directError;
+    }
+
+    console.log('🔍 LOCATION DEBUG: Final response:', { users, error });
 
     if (error) {
-      console.error('Error calling RPC function:', error);
+      console.error('Error fetching users:', error);
       return {
         success: false,
         error: 'Failed to fetch nearby users'
@@ -302,18 +329,17 @@ export const getNearbyUsers = async (
 
     console.log('🔍 LOCATION DEBUG: Found', users.length, 'users in same location bucket');
 
-    // The RPC function already returns properly formatted user data
-    // with distance_km set to 0 for all users in the same bucket
-    const usersWithDistance = users.map((user: DatabaseUser, index: number) => {
+    // Process users - handle both RPC and direct query results
+    const usersWithDistance = users.map((user: any, index: number) => {
       console.log(`🔍 LOCATION DEBUG: Processing user ${index + 1}/${users.length}`);
       console.log('👤 User ID:', user.id);
       console.log('👤 User name:', user.name);
       console.log('👤 User latitude:', user.latitude);
       console.log('👤 User longitude:', user.longitude);
-      console.log('👤 Distance:', user.distance_km);
 
       return {
         ...user,
+        distance_km: user.distance_km || 0, // Ensure distance is set
         hasRealLocation: true
       };
     });
@@ -321,10 +347,9 @@ export const getNearbyUsers = async (
     console.log('🔍 LOCATION DEBUG: Final processed users:', usersWithDistance);
     console.log('🔍 LOCATION DEBUG: Final user count:', usersWithDistance.length);
 
-    usersWithDistance.forEach((user: DatabaseUser, index) => {
+    usersWithDistance.forEach((user: any, index) => {
       console.log(`📋 Final user ${index + 1}: ${user.name} - same location bucket (distance: ${user.distance_km}km)`);
     });
-
 
     return {
       success: true,
