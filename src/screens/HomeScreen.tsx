@@ -154,14 +154,16 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
     }
   };
 
+  const handleBackFromProfile = () => {
+    setSelectedUser(null);
+    setSelectedUserPosts([]);
+  };
+
   if (selectedUser) {
     return (
       <div className="min-h-full bg-black">
         <button
-          onClick={() => {
-            setSelectedUser(null);
-            setSelectedUserPosts([]);
-          }}
+          onClick={handleBackFromProfile}
           className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
         >
           <ChevronLeftIcon className="w-5 h-5 text-white" />
