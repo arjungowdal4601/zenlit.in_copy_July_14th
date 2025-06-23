@@ -1,4 +1,4 @@
-// Location toggle management with clean state transitions
+// Location toggle management with persistent state across pages
 import { supabase } from './supabase';
 import { 
   requestUserLocation, 
@@ -7,7 +7,7 @@ import {
   saveUserLocation,
   isGeolocationSupported,
   isSecureContext,
-  hasLocationChanged // Add this import
+  hasLocationChanged
 } from './location';
 import type { UserLocation } from '../types';
 
@@ -18,6 +18,9 @@ interface LocationToggleState {
   intervalId: NodeJS.Timeout | null;
   currentLocation: UserLocation | null;
 }
+
+// Storage key for persisting toggle state
+const LOCATION_TOGGLE_STORAGE_KEY = 'zenlit_location_toggle_enabled';
 
 class LocationToggleManager {
   private state: LocationToggleState = {
@@ -33,8 +36,36 @@ class LocationToggleManager {
   private onError?: (error: string) => void;
 
   constructor() {
-    // Initialize with OFF state
-    this.state.isEnabled = false;
+    // Load persisted state from localStorage
+    this.loadPersistedState();
+  }
+
+  // Load persisted toggle state from localStorage
+  private loadPersistedState() {
+    try {
+      const savedState = localStorage.getItem(LOCATION_TOGGLE_STORAGE_KEY);
+      if (savedState) {
+        const isEnabled = JSON.parse(savedState);
+        this.state.isEnabled = isEnabled;
+        console.log('🔄 Location Toggle: Loaded persisted state - enabled:', isEnabled);
+      } else {
+        console.log('🔄 Location Toggle: No persisted state found, defaulting to OFF');
+        this.state.isEnabled = false;
+      }
+    } catch (error) {
+      console.error('Error loading persisted location toggle state:', error);
+      this.state.isEnabled = false;
+    }
+  }
+
+  // Save toggle state to localStorage
+  private savePersistedState() {
+    try {
+      localStorage.setItem(LOCATION_TOGGLE_STORAGE_KEY, JSON.stringify(this.state.isEnabled));
+      console.log('🔄 Location Toggle: Saved state to localStorage - enabled:', this.state.isEnabled);
+    } catch (error) {
+      console.error('Error saving location toggle state:', error);
+    }
   }
 
   // Initialize the manager with user ID and callbacks
@@ -46,11 +77,67 @@ class LocationToggleManager {
     this.userId = userId;
     this.onLocationUpdate = onLocationUpdate;
     this.onError = onError;
+
+    console.log('🔄 Location Toggle: Initializing with user:', userId, 'enabled:', this.state.isEnabled);
+
+    // If toggle was previously enabled, restore tracking
+    if (this.state.isEnabled) {
+      console.log('🔄 Location Toggle: Restoring location tracking from persisted state');
+      this.restoreLocationTracking();
+    }
+  }
+
+  // Restore location tracking when app loads with toggle enabled
+  private async restoreLocationTracking() {
+    if (!this.userId) {
+      console.error('Cannot restore location tracking: no user ID');
+      return;
+    }
+
+    try {
+      console.log('🔄 Location Toggle: Restoring location tracking...');
+      
+      // Get current location
+      const locationResult = await requestUserLocation();
+      
+      if (locationResult.success && locationResult.location) {
+        this.state.currentLocation = locationResult.location;
+        
+        // Save to database
+        await saveUserLocation(this.userId, locationResult.location);
+        
+        // Start continuous tracking
+        this.startTracking();
+        
+        // Notify callback
+        if (this.onLocationUpdate) {
+          this.onLocationUpdate(locationResult.location);
+        }
+        
+        console.log('✅ Location Toggle: Successfully restored location tracking');
+      } else {
+        console.error('❌ Location Toggle: Failed to restore location:', locationResult.error);
+        // Don't disable toggle, just show error
+        if (this.onError) {
+          this.onError(locationResult.error || 'Failed to restore location');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Location Toggle: Error restoring location tracking:', error);
+      if (this.onError) {
+        this.onError('Failed to restore location tracking');
+      }
+    }
   }
 
   // Get current toggle state
   getState() {
     return { ...this.state };
+  }
+
+  // Check if toggle is enabled (for UI state)
+  isEnabled() {
+    return this.state.isEnabled;
   }
 
   // Turn location tracking ON
@@ -60,7 +147,12 @@ class LocationToggleManager {
     }
 
     if (this.state.isEnabled) {
-      return { success: true }; // Already on
+      console.log('🔄 Location Toggle: Already enabled, ensuring tracking is active');
+      // If enabled but not tracking, start tracking
+      if (!this.state.isTracking) {
+        this.startTracking();
+      }
+      return { success: true };
     }
 
     try {
@@ -87,6 +179,9 @@ class LocationToggleManager {
       // Update state
       this.state.isEnabled = true;
       this.state.currentLocation = locationResult.location;
+
+      // Persist state
+      this.savePersistedState();
 
       // Start continuous tracking
       this.startTracking();
@@ -139,6 +234,9 @@ class LocationToggleManager {
       // Update state
       this.state.isEnabled = false;
       this.state.currentLocation = null;
+
+      // Persist state
+      this.savePersistedState();
 
       // Notify callback
       if (this.onLocationUpdate) {
@@ -288,10 +386,19 @@ class LocationToggleManager {
   cleanup() {
     console.log('🧹 Cleaning up location toggle manager');
     this.stopTracking();
-    this.state.currentLocation = null;
-    this.userId = null;
+    // Don't clear currentLocation or isEnabled state - keep for next initialization
     this.onLocationUpdate = undefined;
     this.onError = undefined;
+  }
+
+  // Clear all persisted state (for logout)
+  clearPersistedState() {
+    try {
+      localStorage.removeItem(LOCATION_TOGGLE_STORAGE_KEY);
+      console.log('🔄 Location Toggle: Cleared persisted state');
+    } catch (error) {
+      console.error('Error clearing location toggle state:', error);
+    }
   }
 }
 

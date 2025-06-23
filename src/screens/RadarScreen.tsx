@@ -40,8 +40,8 @@ export const RadarScreen: React.FC<Props> = ({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // NEW: Location toggle state
-  const [isLocationEnabled, setIsLocationEnabled] = useState(false);
+  // Location toggle state - get from persistent manager
+  const [isLocationEnabled, setIsLocationEnabled] = useState(locationToggleManager.isEnabled());
   const [isTogglingLocation, setIsTogglingLocation] = useState(false);
 
   // Refs for cleanup
@@ -96,16 +96,30 @@ export const RadarScreen: React.FC<Props> = ({
 
       setCurrentUser(profile);
 
-      // Initialize location toggle manager
+      // Initialize location toggle manager with current user
       locationToggleManager.initialize(
         user.id,
         handleLocationUpdate,
         handleLocationError
       );
 
-      // Check if user has location data (but don't auto-enable toggle)
-      if (profile.latitude && profile.longitude) {
-        console.log('🚀 RADAR DEBUG: User has existing location data, but toggle starts OFF');
+      // Get the current toggle state from the manager
+      const toggleState = locationToggleManager.getState();
+      setIsLocationEnabled(toggleState.isEnabled);
+
+      console.log('🚀 RADAR DEBUG: Location toggle state:', {
+        isEnabled: toggleState.isEnabled,
+        isTracking: toggleState.isTracking,
+        hasCurrentLocation: !!toggleState.currentLocation
+      });
+
+      // If toggle is enabled, load users
+      if (toggleState.isEnabled && toggleState.currentLocation) {
+        setCurrentLocation(toggleState.currentLocation);
+        await loadNearbyUsers(user.id, toggleState.currentLocation);
+      } else if (profile.latitude && profile.longitude) {
+        // User has location data but toggle is OFF
+        console.log('🚀 RADAR DEBUG: User has location data but toggle is OFF');
         const userLocation: UserLocation = {
           latitude: profile.latitude,
           longitude: profile.longitude,
@@ -113,15 +127,14 @@ export const RadarScreen: React.FC<Props> = ({
         };
         setCurrentLocation(userLocation);
         setLocationPermission({ granted: true, denied: false, pending: false });
-        // Note: Toggle remains OFF by default, users must manually turn it ON
+        // Don't load users since toggle is OFF
+        setUsers([]);
       } else {
         console.log('🚀 RADAR DEBUG: User has no location data');
         const permissionStatus = await checkLocationPermission();
         setLocationPermission(permissionStatus);
+        setUsers([]);
       }
-
-      // Always start with empty users array since toggle is OFF by default
-      setUsers([]);
 
     } catch (error) {
       console.error('🚀 RADAR DEBUG: Error initializing radar:', error);
@@ -135,6 +148,7 @@ export const RadarScreen: React.FC<Props> = ({
   const handleLocationUpdate = useCallback(async (location: UserLocation | null) => {
     if (!mountedRef.current) return;
 
+    console.log('📍 RADAR: Location update received:', location);
     setCurrentLocation(location);
     
     if (location && currentUser && isLocationEnabled) {
@@ -214,16 +228,14 @@ export const RadarScreen: React.FC<Props> = ({
       if (enabled) {
         console.log('🔄 Turning location toggle ON');
         
-        // Set state immediately to ensure proper timing
-        setIsLocationEnabled(true);
-        
         // Turn ON location tracking
         const result = await locationToggleManager.turnOn();
         
         if (result.success) {
+          setIsLocationEnabled(true);
           console.log('✅ Location toggle turned ON successfully');
           
-          // Explicitly load nearby users after successful toggle
+          // Load nearby users after successful toggle
           const managerState = locationToggleManager.getState();
           if (currentUser && managerState.currentLocation) {
             await loadNearbyUsers(currentUser.id, managerState.currentLocation);
@@ -392,7 +404,7 @@ export const RadarScreen: React.FC<Props> = ({
               <div>
                 <span className="text-sm text-blue-400 font-medium">Location Tracking Off</span>
                 <p className="text-xs text-blue-300">
-                  Turn on &quot;Show Nearby&quot; to find people around you
+                  Turn on "Show Nearby" to find people around you
                 </p>
               </div>
             </div>
@@ -467,7 +479,7 @@ export const RadarScreen: React.FC<Props> = ({
             </div>
             <p className="text-gray-400 mb-2">Location tracking is off</p>
             <p className="text-gray-500 text-sm mb-4">
-              Turn on &quot;Show Nearby&quot; to see people around you
+              Turn on "Show Nearby" to see people around you
             </p>
             <button
               onClick={() => handleLocationToggle(true)}

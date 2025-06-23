@@ -12,6 +12,7 @@ import { UserGroupIcon, Squares2X2Icon, UserIcon, PlusIcon, ChatBubbleLeftIcon }
 import { User } from './types';
 import { supabase, onAuthStateChange } from './lib/supabase';
 import { checkSession, handleRefreshTokenError } from './lib/auth';
+import { locationToggleManager } from './lib/locationToggle';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'profileSetup' | 'app'>('welcome');
@@ -23,7 +24,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
-  const [isNavigationVisible, setIsNavigationVisible] = useState(true); // NEW: Control navigation visibility
+  const [isNavigationVisible, setIsNavigationVisible] = useState(true);
 
   // Ensure we're on the client side before doing anything
   useEffect(() => {
@@ -215,7 +216,10 @@ export default function App() {
     setActiveTab('radar');
     setSelectedUser(null);
     setSelectedChatUser(null);
-    setIsNavigationVisible(true); // Reset navigation visibility
+    setIsNavigationVisible(true);
+    
+    // Clear location toggle state on logout
+    locationToggleManager.clearPersistedState();
   };
 
   const handleLogout = async () => {
@@ -247,7 +251,7 @@ export default function App() {
     setActiveTab('create');
   };
 
-  // NEW: Handle navigation visibility changes from MessagesScreen
+  // Handle navigation visibility changes from MessagesScreen
   const handleNavigationVisibilityChange = (visible: boolean) => {
     setIsNavigationVisible(visible);
   };
@@ -341,7 +345,7 @@ export default function App() {
           </div>
         </main>
 
-        {/* Bottom Navigation - UPDATED: Conditionally visible */}
+        {/* Bottom Navigation - Conditionally visible */}
         {isNavigationVisible && (
           <nav className="bg-gray-900 border-t border-gray-800 flex-shrink-0 bottom-nav">
             <div className="flex justify-around items-center py-2 px-4 h-16">
