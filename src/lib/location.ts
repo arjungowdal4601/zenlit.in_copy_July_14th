@@ -51,8 +51,8 @@ export const requestUserLocation = async (): Promise<{
 
     // Round coordinates to 2 decimal places for privacy and performance
     const location: UserLocation = {
-      latitude: Number(position.coords.latitude.toFixed(2)),
-      longitude: Number(position.coords.longitude.toFixed(2)),
+      latitude: Number(position.coords.latitude.toFixed(1)),
+      longitude: Number(position.coords.longitude.toFixed(1)),
       accuracy: position.coords.accuracy,
       timestamp: Date.now()
     };
@@ -113,8 +113,8 @@ export const watchUserLocation = (
       (position) => {
         // Round coordinates to 2 decimal places for privacy and performance
         const location: UserLocation = {
-          latitude: Number(position.coords.latitude.toFixed(2)),
-          longitude: Number(position.coords.longitude.toFixed(2)),
+          latitude: Number(position.coords.latitude.toFixed(1)),
+          longitude: Number(position.coords.longitude.toFixed(1)),
           accuracy: position.coords.accuracy,
           timestamp: Date.now()
         };
@@ -181,8 +181,8 @@ export const saveUserLocation = async (
     console.log('Saving user location to profile:', userId, location);
 
     // Round coordinates to 2 decimal places before saving
-    const latRounded = Number(location.latitude.toFixed(2));
-    const lonRounded = Number(location.longitude.toFixed(2));
+    const latRounded = Number(location.latitude.toFixed(1));
+    const lonRounded = Number(location.longitude.toFixed(1));
 
     const { error } = await supabase
       .from('profiles')
@@ -218,10 +218,10 @@ export const hasLocationChanged = (
   oldLocation: UserLocation,
   newLocation: UserLocation
 ): boolean => {
-  const oldLatRounded = Number(oldLocation.latitude.toFixed(2));
-  const oldLonRounded = Number(oldLocation.longitude.toFixed(2));
-  const newLatRounded = Number(newLocation.latitude.toFixed(2));
-  const newLonRounded = Number(newLocation.longitude.toFixed(2));
+  const oldLatRounded = Number(oldLocation.latitude.toFixed(1));
+  const oldLonRounded = Number(oldLocation.longitude.toFixed(1));
+  const newLatRounded = Number(newLocation.latitude.toFixed(1));
+  const newLonRounded = Number(newLocation.longitude.toFixed(1));
   
   return oldLatRounded !== newLatRounded || oldLonRounded !== newLonRounded;
 };
@@ -243,8 +243,8 @@ export const getNearbyUsers = async (
     console.log('📍 Limit:', limit);
 
     // Round coordinates to 2 decimal places for exact matching
-    const latRounded = Number(currentLocation.latitude.toFixed(2));
-    const lonRounded = Number(currentLocation.longitude.toFixed(2));
+    const latRounded = Number(currentLocation.latitude.toFixed(1));
+    const lonRounded = Number(currentLocation.longitude.toFixed(1));
 
     console.log('📍 Rounded coordinates for matching:', { latRounded, lonRounded });
 
