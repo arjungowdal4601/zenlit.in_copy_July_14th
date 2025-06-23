@@ -263,7 +263,7 @@ export const getNearbyUsers = async (
   error?: string;
 }> => {
   try {
-    console.log('🔍 LOCATION DEBUG: Using database RPC for nearby users');
+    console.log('🔍 LOCATION DEBUG: Getting nearby users');
     console.log('📍 Current user ID:', currentUserId);
     console.log('📍 Current location:', currentLocation);
     console.log('📍 Limit:', limit);
@@ -272,88 +272,130 @@ export const getNearbyUsers = async (
     const latRounded = Number(currentLocation.latitude.toFixed(2));
     const lonRounded = Number(currentLocation.longitude.toFixed(2));
 
-    console.log('📍 Rounded coordinates for RPC call:', { latRounded, lonRounded });
+    console.log('📍 Rounded coordinates for matching:', { latRounded, lonRounded });
 
-    // First, let's try the direct database query to debug
-    console.log('🔍 DEBUG: Testing direct database query first...');
-    const { data: directProfiles, error: directError } = await supabase
+    // First, let's try a direct database query to see what users exist with location data
+    console.log('🔍 DEBUG: Checking all users with location data...');
+    const { data: allUsersWithLocation, error: allUsersError } = await supabase
+      .from('profiles')
+      .select('id, name, latitude, longitude')
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+      .not('name', 'is', null);
+
+    if (allUsersError) {
+      console.error('🔍 DEBUG: Error fetching all users with location:', allUsersError);
+    } else {
+      console.log('🔍 DEBUG: Found', allUsersWithLocation?.length || 0, 'users with location data');
+      allUsersWithLocation?.forEach((user: any, index: number) => {
+        const userLatRounded = Number(user.latitude.toFixed(2));
+        const userLonRounded = Number(user.longitude.toFixed(2));
+        console.log(`🔍 DEBUG: User ${index + 1}: ${user.name} - Lat: ${user.latitude} (${userLatRounded}), Lon: ${user.longitude} (${userLonRounded})`);
+        
+        if (userLatRounded === latRounded && userLonRounded === lonRounded) {
+          console.log(`✅ MATCH FOUND: ${user.name} has matching coordinates!`);
+        }
+      });
+    }
+
+    // Try the direct query approach for exact coordinate matching
+    console.log('🔍 DEBUG: Testing direct coordinate matching query...');
+    const { data: directMatchUsers, error: directError } = await supabase
       .from('profiles')
       .select('*')
       .neq('id', currentUserId)
       .not('name', 'is', null)
-      .eq('latitude', latRounded)
-      .eq('longitude', lonRounded)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
       .limit(limit);
 
-    console.log('🔍 DEBUG: Direct query result:', { directProfiles, directError });
-    console.log('🔍 DEBUG: Found', directProfiles?.length || 0, 'profiles with direct query');
+    if (directError) {
+      console.error('🔍 DEBUG: Direct query error:', directError);
+    } else {
+      console.log('🔍 DEBUG: Direct query returned', directMatchUsers?.length || 0, 'users');
+      
+      // Filter users with matching coordinates
+      const matchingUsers = directMatchUsers?.filter((user: any) => {
+        const userLatRounded = Number(user.latitude.toFixed(2));
+        const userLonRounded = Number(user.longitude.toFixed(2));
+        const matches = userLatRounded === latRounded && userLonRounded === lonRounded;
+        
+        console.log(`🔍 DEBUG: Checking ${user.name}: ${userLatRounded} === ${latRounded} && ${userLonRounded} === ${lonRounded} = ${matches}`);
+        
+        return matches;
+      }) || [];
+      
+      console.log('🔍 DEBUG: Found', matchingUsers.length, 'users with matching coordinates');
+      
+      if (matchingUsers.length > 0) {
+        console.log('🔍 LOCATION DEBUG: Using direct query results');
+        
+        // Process users - add distance_km field
+        const usersWithDistance = matchingUsers.map((user: DatabaseUser, index: number) => {
+          console.log(`🔍 LOCATION DEBUG: Processing user ${index + 1}/${matchingUsers.length}`);
+          console.log('👤 User ID:', user.id);
+          console.log('👤 User name:', user.name);
+          console.log('👤 User latitude:', user.latitude);
+          console.log('👤 User longitude:', user.longitude);
 
-    // Now try the RPC function
-    console.log('🔍 DEBUG: Testing RPC function...');
-    const { data: rpcUsers, error: rpcError } = await supabase
-      .rpc('get_users_in_location_bucket', {
-        current_user_id: currentUserId,
-        user_lat: latRounded,
-        user_lng: lonRounded
-      });
+          return {
+            ...user,
+            distance_km: 0, // All users in same bucket have distance 0
+            hasRealLocation: true
+          };
+        });
 
-    console.log('🔍 DEBUG: RPC result:', { rpcUsers, rpcError });
+        console.log('🔍 LOCATION DEBUG: Final processed users:', usersWithDistance);
+        console.log('🔍 LOCATION DEBUG: Final user count:', usersWithDistance.length);
 
-    // Use direct query result if RPC fails
-    let users = rpcUsers;
-    let error = rpcError;
-
-    if (rpcError || !rpcUsers) {
-      console.log('🔍 DEBUG: RPC failed, falling back to direct query');
-      users = directProfiles;
-      error = directError;
+        return {
+          success: true,
+          users: usersWithDistance
+        };
+      }
     }
 
-    console.log('🔍 LOCATION DEBUG: Final response:', { users, error });
+    // Try the RPC function as fallback
+    console.log('🔍 DEBUG: Trying RPC function...');
+    try {
+      const { data: rpcUsers, error: rpcError } = await supabase
+        .rpc('get_users_in_location_bucket', {
+          current_user_id: currentUserId,
+          user_lat: latRounded,
+          user_lng: lonRounded
+        });
 
-    if (error) {
-      console.error('Error fetching users:', error);
-      return {
-        success: false,
-        error: 'Failed to fetch nearby users'
-      };
+      console.log('🔍 DEBUG: RPC result:', { rpcUsers, rpcError });
+
+      if (!rpcError && rpcUsers && rpcUsers.length > 0) {
+        console.log('🔍 LOCATION DEBUG: Using RPC function results');
+        
+        const usersWithDistance = rpcUsers.map((user: DatabaseUser, index: number) => {
+          console.log(`🔍 LOCATION DEBUG: Processing RPC user ${index + 1}/${rpcUsers.length}`);
+          console.log('👤 User ID:', user.id);
+          console.log('👤 User name:', user.name);
+
+          return {
+            ...user,
+            distance_km: user.distance_km || 0,
+            hasRealLocation: true
+          };
+        });
+
+        return {
+          success: true,
+          users: usersWithDistance
+        };
+      }
+    } catch (rpcError) {
+      console.error('🔍 DEBUG: RPC function failed:', rpcError);
     }
 
-    if (!users || users.length === 0) {
-      console.log('🔍 LOCATION DEBUG: No users found in same location bucket');
-      return {
-        success: true,
-        users: []
-      };
-    }
-
-    console.log('🔍 LOCATION DEBUG: Found', users.length, 'users in same location bucket');
-
-    // Process users - handle both RPC and direct query results
-    const usersWithDistance = users.map((user: any, index: number) => {
-      console.log(`🔍 LOCATION DEBUG: Processing user ${index + 1}/${users.length}`);
-      console.log('👤 User ID:', user.id);
-      console.log('👤 User name:', user.name);
-      console.log('👤 User latitude:', user.latitude);
-      console.log('👤 User longitude:', user.longitude);
-
-      return {
-        ...user,
-        distance_km: user.distance_km || 0, // Ensure distance is set
-        hasRealLocation: true
-      };
-    });
-
-    console.log('🔍 LOCATION DEBUG: Final processed users:', usersWithDistance);
-    console.log('🔍 LOCATION DEBUG: Final user count:', usersWithDistance.length);
-
-    usersWithDistance.forEach((user: any, index) => {
-      console.log(`📋 Final user ${index + 1}: ${user.name} - same location bucket (distance: ${user.distance_km}km)`);
-    });
-
+    // If we get here, no users were found
+    console.log('🔍 LOCATION DEBUG: No users found in same location bucket');
     return {
       success: true,
-      users: usersWithDistance
+      users: []
     };
 
   } catch (error) {
