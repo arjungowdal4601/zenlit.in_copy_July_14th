@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from '../../types';
+import { User } from '../types';
 import { Avatar } from '../common/Avatar';
 import { SocialLinks } from '../common/SocialLinks';
 
@@ -13,13 +13,17 @@ export const UserProfile: React.FC<Props> = ({ user, posts = [] }) => {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Cover Image - Use local default instead of stock image */}
+      {/* Cover Image - Fixed to show actual cover photo */}
       <div className="relative h-48 bg-gradient-to-b from-blue-900 to-black">
-        <img
-          src="/images/default-cover.jpg"
-          alt="Cover"
-          className="w-full h-full object-cover opacity-50"
-        />
+        {user.coverPhotoUrl ? (
+          <img
+            src={user.coverPhotoUrl}
+            alt="Cover"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900" />
+        )}
       </div>
 
       {/* Profile Info */}
@@ -66,7 +70,7 @@ export const UserProfile: React.FC<Props> = ({ user, posts = [] }) => {
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <p className="text-gray-400 mb-2">No posts yet</p>
