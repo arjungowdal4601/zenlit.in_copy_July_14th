@@ -226,7 +226,7 @@ export const hasLocationChanged = (
   return oldLatRounded !== newLatRounded || oldLonRounded !== newLonRounded;
 };
 
-// Get nearby users with exact coordinate match (same 2-decimal bucket)
+// Get nearby users using database RPC function for exact coordinate matching
 export const getNearbyUsers = async (
   currentUserId: string,
   currentLocation: UserLocation,
@@ -237,7 +237,7 @@ export const getNearbyUsers = async (
   error?: string;
 }> => {
   try {
-    console.log('🔍 LOCATION DEBUG: Starting getNearbyUsers function');
+    console.log('🔍 LOCATION DEBUG: Using database RPC for nearby users');
     console.log('📍 Current user ID:', currentUserId);
     console.log('📍 Current location:', currentLocation);
     console.log('📍 Limit:', limit);
@@ -246,68 +246,57 @@ export const getNearbyUsers = async (
     const latRounded = Number(currentLocation.latitude.toFixed(2));
     const lonRounded = Number(currentLocation.longitude.toFixed(2));
 
-    console.log('📍 Rounded coordinates for matching:', { latRounded, lonRounded });
+    console.log('📍 Rounded coordinates for RPC call:', { latRounded, lonRounded });
 
-    // Get users with exact coordinate match (same location bucket)
-    const { data: profiles, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .neq('id', currentUserId)
-      .not('name', 'is', null)
-      .eq('latitude', latRounded)
-      .eq('longitude', lonRounded)
-      .limit(limit);
+    // Use the database RPC function for consistent coordinate matching
+    const { data: users, error } = await supabase
+      .rpc('get_users_in_location_bucket', {
+        user_lat: latRounded,
+        user_lng: lonRounded,
+        current_user_id: currentUserId
+      });
 
-    console.log('🔍 LOCATION DEBUG: Raw profiles from database:', profiles);
-    console.log('🔍 LOCATION DEBUG: Database query error:', error);
+    console.log('🔍 LOCATION DEBUG: RPC response:', { users, error });
 
     if (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error calling RPC function:', error);
       return {
         success: false,
         error: 'Failed to fetch nearby users'
       };
     }
 
-    if (!profiles || profiles.length === 0) {
-      console.log('🔍 LOCATION DEBUG: No profiles with matching coordinates found');
+    if (!users || users.length === 0) {
+      console.log('🔍 LOCATION DEBUG: No users found in same location bucket');
       return {
         success: true,
         users: []
       };
     }
 
-    console.log('🔍 LOCATION DEBUG: Processing', profiles.length, 'profiles with matching coordinates');
+    console.log('🔍 LOCATION DEBUG: Found', users.length, 'users in same location bucket');
 
-    // Process users and set distance to 0 (same location bucket)
-    const usersWithDistance = profiles.map((profile, index) => {
-      console.log(`🔍 LOCATION DEBUG: Processing profile ${index + 1}/${profiles.length}`);
-      console.log('👤 Profile ID:', profile.id);
-      console.log('👤 Profile name:', profile.name);
-      console.log('👤 Profile latitude:', profile.latitude);
-      console.log('👤 Profile longitude:', profile.longitude);
+    // The RPC function already returns properly formatted user data
+    // with distance_km set to 0 for all users in the same bucket
+    const usersWithDistance = users.map((user, index) => {
+      console.log(`🔍 LOCATION DEBUG: Processing user ${index + 1}/${users.length}`);
+      console.log('👤 User ID:', user.id);
+      console.log('👤 User name:', user.name);
+      console.log('👤 User latitude:', user.latitude);
+      console.log('👤 User longitude:', user.longitude);
+      console.log('👤 Distance:', user.distance_km);
 
-      const userWithDistance = {
-        ...profile,
-        distance: 0, // All users in same bucket have distance 0
+      return {
+        ...user,
         hasRealLocation: true
       };
-
-      console.log('✅ Final user object:', {
-        id: userWithDistance.id,
-        name: userWithDistance.name,
-        distance: userWithDistance.distance,
-        hasRealLocation: true
-      });
-
-      return userWithDistance;
     });
 
-    console.log('🔍 LOCATION DEBUG: Users in same location bucket:', usersWithDistance);
+    console.log('🔍 LOCATION DEBUG: Final processed users:', usersWithDistance);
     console.log('🔍 LOCATION DEBUG: Final user count:', usersWithDistance.length);
 
     usersWithDistance.forEach((user, index) => {
-      console.log(`📋 Final user ${index + 1}: ${user.name} - same location bucket`);
+      console.log(`📋 Final user ${index + 1}: ${user.name} - same location bucket (distance: ${user.distance_km}km)`);
     });
 
     return {
