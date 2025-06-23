@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Message } from '../../types';
 import { format } from 'date-fns';
-import { getCurrentLocation, calculateDistance } from '../../lib/geo';
 
 interface Contact extends User {
   latitude?: number;
@@ -14,6 +13,7 @@ interface ChatMessage extends Message {}
 interface ChatListProps {
   users: User[];
   messages: Message[];
+  nearbyIds: string[];
   selectedUser?: User;
   onSelectUser: (user: User) => void;
   searchQuery?: string;
@@ -22,38 +22,13 @@ interface ChatListProps {
 export const ChatList = ({
   users,
   messages,
+  nearbyIds,
   selectedUser,
   onSelectUser,
   searchQuery = ''
 }: ChatListProps) => {
-  const [currentCoords, setCurrentCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [nearbyContacts, setNearbyContacts] = useState<Contact[]>([]);
   const [historyOnlyContacts, setHistoryOnlyContacts] = useState<Contact[]>([]);
-
-  useEffect(() => {
-    let watchId: number | undefined;
-
-    const loadLocation = async () => {
-      const loc = await getCurrentLocation();
-      if (loc) {
-        setCurrentCoords(loc);
-      }
-    };
-
-    loadLocation();
-
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition((pos) => {
-        setCurrentCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-      });
-    }
-
-    return () => {
-      if (watchId !== undefined) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!users || users.length === 0) {
@@ -62,32 +37,22 @@ export const ChatList = ({
       return;
     }
 
-    if (!currentCoords) {
-      setNearbyContacts([]);
-      setHistoryOnlyContacts(users.filter(u => (u as Contact).hasHistory) as Contact[]);
-      return;
-    }
-
     const nearby: Contact[] = [];
     const history: Contact[] = [];
 
     users.forEach((u) => {
-      const contact = u as Contact;
-      if (contact.latitude != null && contact.longitude != null) {
-        const d = calculateDistance(currentCoords.latitude, currentCoords.longitude, contact.latitude, contact.longitude);
-        if (d <= 1) {
-          nearby.push(contact);
-        } else if (contact.hasHistory) {
-          history.push(contact);
-        }
-      } else if (contact.hasHistory) {
+      const contact = { ...u } as Contact;
+      if (nearbyIds.includes(u.id)) {
+        nearby.push(contact);
+      } else {
+        contact.hasHistory = true;
         history.push(contact);
       }
     });
 
     setNearbyContacts(nearby);
     setHistoryOnlyContacts(history);
-  }, [users, currentCoords]);
+  }, [users, nearbyIds]);
   const getLatestMessage = (userId: string) => {
     return messages
       .filter(msg => msg.senderId === userId || msg.receiverId === userId)
