@@ -214,12 +214,20 @@ export const RadarScreen: React.FC<Props> = ({
       if (enabled) {
         console.log('🔄 Turning location toggle ON');
         
+        // Set state immediately to ensure proper timing
+        setIsLocationEnabled(true);
+        
         // Turn ON location tracking
         const result = await locationToggleManager.turnOn();
         
         if (result.success) {
-          setIsLocationEnabled(true);
           console.log('✅ Location toggle turned ON successfully');
+          
+          // Explicitly load nearby users after successful toggle
+          const managerState = locationToggleManager.getState();
+          if (currentUser && managerState.currentLocation) {
+            await loadNearbyUsers(currentUser.id, managerState.currentLocation);
+          }
         } else {
           console.error('❌ Failed to turn ON location toggle:', result.error);
           setLocationError(result.error || 'Failed to enable location');

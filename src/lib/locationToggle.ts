@@ -6,7 +6,8 @@ import {
   stopWatchingLocation,
   saveUserLocation,
   isGeolocationSupported,
-  isSecureContext
+  isSecureContext,
+  hasLocationChanged // Add this import
 } from './location';
 import type { UserLocation } from '../types';
 
@@ -215,13 +216,11 @@ class LocationToggleManager {
       return; // Don't update if toggle is OFF
     }
 
-    // Check if location has changed significantly (rounded to 2 decimal places)
-    const hasChanged = !this.state.currentLocation ||
-      Math.abs(this.state.currentLocation.latitude - location.latitude) > 0.005 ||
-      Math.abs(this.state.currentLocation.longitude - location.longitude) > 0.005;
+    // Use the hasLocationChanged utility function for proper 2-decimal comparison
+    const changed = !this.state.currentLocation || hasLocationChanged(this.state.currentLocation, location);
 
-    if (hasChanged) {
-      console.log('📍 Location changed, updating database');
+    if (changed) {
+      console.log('📍 Location bucket changed, updating database');
       
       // Save to database
       const saveResult = await saveUserLocation(this.userId, location);
