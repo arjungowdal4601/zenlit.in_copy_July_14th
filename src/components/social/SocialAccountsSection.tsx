@@ -164,7 +164,7 @@ export const SocialAccountsSection = forwardRef<SocialAccountsSectionRef, Props>
                 <button
                   onClick={() => openModal(provider.id)}
                   disabled={isLoading}
-                  className={`px-4 py-2 rounded-lg font-medium text-white transition-all active:scale-95 disabled:cursor-not-allowed flex items-center gap-2 text-sm ${
+                  className={`px-3 py-2 rounded-lg font-medium text-white transition-all active:scale-95 disabled:cursor-not-allowed flex items-center gap-2 text-sm ${
                     isConnected
                       ? 'bg-blue-600 hover:bg-blue-700'
                       : 'bg-gray-700 hover:bg-gray-600'
