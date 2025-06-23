@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RadarUserCard } from '../components/radar/RadarUserCard';
 import { LocationPermissionModal } from '../components/radar/LocationPermissionModal';
 import { UserProfile } from '../components/profile/UserProfile';
+import { PostsGalleryScreen } from './PostsGalleryScreen';
 import { User, UserLocation, LocationPermissionStatus, Post } from '../types';
 import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
@@ -47,6 +48,7 @@ export const RadarScreen: React.FC<Props> = ({
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [selectedProfileUserPosts, setSelectedProfileUserPosts] = useState<Post[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [showPostsGallery, setShowPostsGallery] = useState(false);
 
   // Refs for cleanup
   const mountedRef = useRef(true);
@@ -294,6 +296,15 @@ export const RadarScreen: React.FC<Props> = ({
   const handleBackFromProfile = () => {
     setSelectedProfileUser(null);
     setSelectedProfileUserPosts([]);
+    setShowPostsGallery(false);
+  };
+
+  const handlePostClick = () => {
+    setShowPostsGallery(true);
+  };
+
+  const handleBackFromGallery = () => {
+    setShowPostsGallery(false);
   };
 
   const handleEnablePreciseLocation = () => {
@@ -351,6 +362,17 @@ export const RadarScreen: React.FC<Props> = ({
 
   // Show profile screen if a user is selected
   if (selectedProfileUser) {
+    if (showPostsGallery) {
+      return (
+        <PostsGalleryScreen
+          user={selectedProfileUser}
+          posts={selectedProfileUserPosts}
+          onBack={handleBackFromGallery}
+          onUserClick={() => {}}
+        />
+      );
+    }
+
     return (
       <div className="min-h-full bg-black">
         <button
@@ -364,7 +386,11 @@ export const RadarScreen: React.FC<Props> = ({
             ...loading spinner...
           </div>
         ) : (
-          <UserProfile user={selectedProfileUser} posts={selectedProfileUserPosts} />
+          <UserProfile
+            user={selectedProfileUser}
+            posts={selectedProfileUserPosts}
+            onPostClick={handlePostClick}
+          />
         )}
       </div>
     );

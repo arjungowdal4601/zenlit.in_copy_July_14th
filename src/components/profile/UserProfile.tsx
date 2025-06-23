@@ -6,9 +6,10 @@ import { SocialLinks } from '../common/SocialLinks';
 interface Props {
   user: User;
   posts?: any[]; // Accept real posts from props
+  onPostClick?: () => void;
 }
 
-export const UserProfile: React.FC<Props> = ({ user, posts = [] }) => {
+export const UserProfile: React.FC<Props> = ({ user, posts = [], onPostClick }) => {
   // Only use real posts passed as props - no more mock data generation
 
   return (
@@ -52,7 +53,11 @@ export const UserProfile: React.FC<Props> = ({ user, posts = [] }) => {
           {posts.length > 0 ? (
             <div className="grid grid-cols-3 gap-1">
               {posts.map((post) => (
-                <div key={post.id} className="aspect-square relative group">
+                <button
+                  key={post.id}
+                  onClick={() => onPostClick?.()}
+                  className="aspect-square relative group active:scale-95 transition-transform"
+                >
                   <img
                     src={post.mediaUrl}
                     alt={post.title}
@@ -63,7 +68,7 @@ export const UserProfile: React.FC<Props> = ({ user, posts = [] }) => {
                       {post.caption}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
