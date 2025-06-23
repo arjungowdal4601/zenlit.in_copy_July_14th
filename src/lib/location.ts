@@ -178,6 +178,15 @@ export const saveUserLocation = async (
   error?: string;
 }> => {
   try {
+    // Validate userId before proceeding
+    if (!userId || userId === 'null' || userId === 'undefined' || typeof userId !== 'string') {
+      console.error('Invalid user ID provided:', userId);
+      return {
+        success: false,
+        error: 'Invalid user ID provided'
+      };
+    }
+
     console.log('Saving user location to profile:', userId, location);
 
     // Round coordinates to 2 decimal places before saving
@@ -265,12 +274,12 @@ export const getNearbyUsers = async (
 
     console.log('📍 Rounded coordinates for RPC call:', { latRounded, lonRounded });
 
-    // Use the database RPC function for consistent coordinate matching
+    // Use the database RPC function with correct parameter order
     const { data: users, error } = await supabase
       .rpc('get_users_in_location_bucket', {
+        current_user_id: currentUserId,
         user_lat: latRounded,
-        user_lng: lonRounded,
-        current_user_id: currentUserId
+        user_lng: lonRounded
       });
 
     console.log('🔍 LOCATION DEBUG: RPC response:', { users, error });
@@ -382,6 +391,15 @@ export const requestLocationAndSave = async (
   error?: string;
 }> => {
   try {
+    // Validate userId before proceeding
+    if (!userId || userId === 'null' || userId === 'undefined' || typeof userId !== 'string') {
+      console.error('Invalid user ID provided to requestLocationAndSave:', userId);
+      return {
+        success: false,
+        error: 'Invalid user ID provided'
+      };
+    }
+
     // First request the location
     const locationResult = await requestUserLocation();
     
