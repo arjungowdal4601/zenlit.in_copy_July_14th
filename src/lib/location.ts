@@ -226,6 +226,23 @@ export const hasLocationChanged = (
   return oldLatRounded !== newLatRounded || oldLonRounded !== newLonRounded;
 };
 
+// Define the type for users returned by the RPC function
+interface DatabaseUser {
+  id: string;
+  name: string;
+  username?: string;
+  email: string;
+  bio: string;
+  profile_photo_url?: string;
+  cover_photo_url?: string;
+  instagram_url?: string;
+  linked_in_url?: string;
+  twitter_url?: string;
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+}
+
 // Get nearby users using database RPC function for exact coordinate matching
 export const getNearbyUsers = async (
   currentUserId: string,
@@ -278,7 +295,7 @@ export const getNearbyUsers = async (
 
     // The RPC function already returns properly formatted user data
     // with distance_km set to 0 for all users in the same bucket
-    const usersWithDistance = users.map((user, index) => {
+    const usersWithDistance = users.map((user: DatabaseUser, index: number) => {
       console.log(`🔍 LOCATION DEBUG: Processing user ${index + 1}/${users.length}`);
       console.log('👤 User ID:', user.id);
       console.log('👤 User name:', user.name);
