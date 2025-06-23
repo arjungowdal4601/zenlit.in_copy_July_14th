@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RadarUserCard } from '../components/radar/RadarUserCard';
 import { LocationPermissionModal } from '../components/radar/LocationPermissionModal';
-import { ProfileScreen } from './ProfileScreen';
+import { UserProfile } from '../components/profile/UserProfile';
 import { User, UserLocation, LocationPermissionStatus, Post } from '../types';
-import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
 import { transformProfileToUser } from '../../lib/utils';
 import { getUserPosts } from '../lib/posts';
@@ -353,19 +353,18 @@ export const RadarScreen: React.FC<Props> = ({
   if (selectedProfileUser) {
     return (
       <div className="min-h-full bg-black">
+        <button
+          onClick={handleBackFromProfile}
+          className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
+        >
+          <ChevronLeftIcon className="w-5 h-5 text-white" />
+        </button>
         {isLoadingProfile ? (
           <div className="min-h-full bg-black flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-400">Loading profile...</p>
-            </div>
+            ...loading spinner...
           </div>
         ) : (
-          <ProfileScreen
-            user={selectedProfileUser}
-            currentUser={currentUser}
-            onBack={handleBackFromProfile}
-          />
+          <UserProfile user={selectedProfileUser} posts={selectedProfileUserPosts} />
         )}
       </div>
     );
