@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RadarUserCard } from '../components/radar/RadarUserCard';
 import { LocationPermissionModal } from '../components/radar/LocationPermissionModal';
-import { User, UserLocation, LocationPermissionStatus } from '../types';
+import { ProfileScreen } from './ProfileScreen';
+import { User, UserLocation, LocationPermissionStatus, Post } from '../types';
 import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
 import { transformProfileToUser } from '../../lib/utils';
+import { getUserPosts } from '../lib/posts';
 import { 
   getNearbyUsers, 
   checkLocationPermission,
@@ -15,20 +17,17 @@ import { locationToggleManager } from '../lib/locationToggle';
 
 interface Props {
   userGender: 'male' | 'female';
-  onNavigate: (tab: string) => void;
-  onViewProfile: (user: User) => void;
+  currentUser: any;
   onMessageUser?: (user: User) => void;
 }
 
 export const RadarScreen: React.FC<Props> = ({ 
   userGender, 
-  onNavigate, 
-  onViewProfile, 
+  currentUser,
   onMessageUser 
 }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentLocation, setCurrentLocation] = useState<UserLocation | null>(null);
   const [locationPermission, setLocationPermission] = useState<LocationPermissionStatus>({
     granted: false,
@@ -43,6 +42,11 @@ export const RadarScreen: React.FC<Props> = ({
   // Location toggle state - get from persistent manager
   const [isLocationEnabled, setIsLocationEnabled] = useState(locationToggleManager.isEnabled());
   const [isTogglingLocation, setIsTogglingLocation] = useState(false);
+
+  // Profile viewing state
+  const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
+  const [selectedProfileUserPosts, setSelectedProfileUserPosts] = useState<Post[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   // Refs for cleanup
   const mountedRef = useRef(true);
@@ -62,43 +66,17 @@ export const RadarScreen: React.FC<Props> = ({
     try {
       console.log('🚀 RADAR DEBUG: Initializing radar screen');
       
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('🚀 RADAR DEBUG: User not found:', userError);
+      if (!currentUser) {
+        console.error('🚀 RADAR DEBUG: No current user provided');
         setIsLoading(false);
         return;
       }
 
-      console.log('🚀 RADAR DEBUG: Current user found:', user.id);
-
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileError || !profile) {
-        console.error('🚀 RADAR DEBUG: Profile not found:', profileError);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('🚀 RADAR DEBUG: User profile loaded:', {
-        id: profile.id,
-        name: profile.name,
-        hasLocation: !!(profile.latitude && profile.longitude),
-        latitude: profile.latitude,
-        longitude: profile.longitude
-      });
-
-      setCurrentUser(profile);
+      console.log('🚀 RADAR DEBUG: Current user found:', currentUser.id);
 
       // Initialize location toggle manager with current user
       locationToggleManager.initialize(
-        user.id,
+        currentUser.id,
         handleLocationUpdate,
         handleLocationError
       );
@@ -116,13 +94,13 @@ export const RadarScreen: React.FC<Props> = ({
       // If toggle is enabled, load users
       if (toggleState.isEnabled && toggleState.currentLocation) {
         setCurrentLocation(toggleState.currentLocation);
-        await loadNearbyUsers(user.id, toggleState.currentLocation);
-      } else if (profile.latitude && profile.longitude) {
+        await loadNearbyUsers(currentUser.id, toggleState.currentLocation);
+      } else if (currentUser.latitude && currentUser.longitude) {
         // User has location data but toggle is OFF
         console.log('🚀 RADAR DEBUG: User has location data but toggle is OFF');
         const userLocation: UserLocation = {
-          latitude: profile.latitude,
-          longitude: profile.longitude,
+          latitude: currentUser.latitude,
+          longitude: currentUser.longitude,
           timestamp: Date.now()
         };
         setCurrentLocation(userLocation);
@@ -269,16 +247,53 @@ export const RadarScreen: React.FC<Props> = ({
     }
   };
 
-  const handleViewProfile = (user: User) => {
-    onViewProfile(user);
-    onNavigate('profile');
+  const handleViewProfile = async (user: User) => {
+    setIsLoadingProfile(true);
+    try {
+      console.log('Loading user profile for userId:', user.id);
+      
+      // Get user profile from database
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error || !profile) {
+        console.error('Error loading user profile:', error);
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      console.log('Profile loaded:', profile);
+
+      // Transform database profile to User type
+      const transformedUser: User = transformProfileToUser(profile);
+      
+      console.log('Transformed user:', transformedUser);
+
+      // Load user's posts
+      const userPosts = await getUserPosts(user.id);
+      console.log('User posts loaded:', userPosts.length);
+
+      setSelectedProfileUser(transformedUser);
+      setSelectedProfileUserPosts(userPosts);
+    } catch (error) {
+      console.error('Error loading user:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
   };
 
   const handleMessage = (user: User) => {
     if (onMessageUser) {
       onMessageUser(user);
     }
-    onNavigate('messages');
+  };
+
+  const handleBackFromProfile = () => {
+    setSelectedProfileUser(null);
+    setSelectedProfileUserPosts([]);
   };
 
   const handleEnablePreciseLocation = () => {
@@ -330,6 +345,28 @@ export const RadarScreen: React.FC<Props> = ({
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading radar...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show profile screen if a user is selected
+  if (selectedProfileUser) {
+    return (
+      <div className="min-h-full bg-black">
+        {isLoadingProfile ? (
+          <div className="min-h-full bg-black flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading profile...</p>
+            </div>
+          </div>
+        ) : (
+          <ProfileScreen
+            user={selectedProfileUser}
+            currentUser={currentUser}
+            onBack={handleBackFromProfile}
+          />
+        )}
       </div>
     );
   }

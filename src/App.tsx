@@ -305,8 +305,7 @@ export default function App() {
               <div className="h-full overflow-y-auto mobile-scroll">
                 <RadarScreen 
                   userGender={userGender} 
-                  onNavigate={setActiveTab}
-                  onViewProfile={setSelectedUser}
+                  currentUser={currentUser}
                   onMessageUser={handleMessageUser}
                 />
               </div>
