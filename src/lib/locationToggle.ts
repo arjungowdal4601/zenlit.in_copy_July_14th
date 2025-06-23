@@ -36,12 +36,19 @@ class LocationToggleManager {
   private onError?: (error: string) => void;
 
   constructor() {
-    // Load persisted state from localStorage
+    // Load persisted state from localStorage (only in browser)
     this.loadPersistedState();
   }
 
   // Load persisted toggle state from localStorage
   private loadPersistedState() {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.log('🔄 Location Toggle: Server-side rendering, skipping localStorage');
+      this.state.isEnabled = false;
+      return;
+    }
+
     try {
       const savedState = localStorage.getItem(LOCATION_TOGGLE_STORAGE_KEY);
       if (savedState) {
@@ -60,6 +67,12 @@ class LocationToggleManager {
 
   // Save toggle state to localStorage
   private savePersistedState() {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.log('🔄 Location Toggle: Server-side rendering, skipping localStorage save');
+      return;
+    }
+
     try {
       localStorage.setItem(LOCATION_TOGGLE_STORAGE_KEY, JSON.stringify(this.state.isEnabled));
       console.log('🔄 Location Toggle: Saved state to localStorage - enabled:', this.state.isEnabled);
@@ -393,6 +406,12 @@ class LocationToggleManager {
 
   // Clear all persisted state (for logout)
   clearPersistedState() {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.log('🔄 Location Toggle: Server-side rendering, skipping localStorage clear');
+      return;
+    }
+
     try {
       localStorage.removeItem(LOCATION_TOGGLE_STORAGE_KEY);
       console.log('🔄 Location Toggle: Cleared persisted state');
