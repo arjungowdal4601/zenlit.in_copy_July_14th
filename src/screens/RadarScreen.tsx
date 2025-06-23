@@ -466,7 +466,7 @@ export const RadarScreen: React.FC<Props> = ({
               <div>
                 <span className="text-sm text-blue-400 font-medium">Location Tracking Off</span>
                 <p className="text-xs text-blue-300">
-                  Turn on "Show Nearby" to find people around you
+                  Turn on -Show Nearby- to find people around you
                 </p>
               </div>
             </div>
@@ -541,7 +541,7 @@ export const RadarScreen: React.FC<Props> = ({
             </div>
             <p className="text-gray-400 mb-2">Location tracking is off</p>
             <p className="text-gray-500 text-sm mb-4">
-              Turn on "Show Nearby" to see people around you
+              Turn on -Show Nearby- to see people around you
             </p>
             <button
               onClick={() => handleLocationToggle(true)}
