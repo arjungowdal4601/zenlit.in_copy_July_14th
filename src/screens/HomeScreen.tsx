@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PostsFeed } from '../components/post/PostsFeed';
 import { UserProfile } from '../components/profile/UserProfile';
+import { PostsGalleryScreen } from './PostsGalleryScreen';
 import { User, Post } from '../types';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
@@ -15,6 +16,7 @@ interface Props {
 export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedUserPosts, setSelectedUserPosts] = useState<Post[]>([]);
+  const [showPostsGallery, setShowPostsGallery] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -157,9 +159,29 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   const handleBackFromProfile = () => {
     setSelectedUser(null);
     setSelectedUserPosts([]);
+    setShowPostsGallery(false);
+  };
+
+  const handlePostClick = () => {
+    setShowPostsGallery(true);
+  };
+
+  const handleBackFromGallery = () => {
+    setShowPostsGallery(false);
   };
 
   if (selectedUser) {
+    if (showPostsGallery) {
+      return (
+        <PostsGalleryScreen
+          user={selectedUser}
+          posts={selectedUserPosts}
+          onBack={handleBackFromGallery}
+          onUserClick={() => {}}
+        />
+      );
+    }
+
     return (
       <div className="min-h-full bg-black">
         <button
@@ -168,7 +190,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
         >
           <ChevronLeftIcon className="w-5 h-5 text-white" />
         </button>
-        
+
         {isLoadingUserProfile ? (
           <div className="min-h-full bg-black flex items-center justify-center">
             <div className="text-center">
@@ -177,7 +199,11 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
             </div>
           </div>
         ) : (
-          <UserProfile user={selectedUser} posts={selectedUserPosts} />
+          <UserProfile
+            user={selectedUser}
+            posts={selectedUserPosts}
+            onPostClick={handlePostClick}
+          />
         )}
       </div>
     );
