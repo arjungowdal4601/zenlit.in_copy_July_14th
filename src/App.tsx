@@ -240,6 +240,7 @@ export default function App() {
 
   const handleMessageUser = (user: User) => {
     setSelectedChatUser(user);
+    setActiveTab('messages');
   };
 
   const handleViewProfile = (user: User) => {

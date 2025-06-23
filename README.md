@@ -66,12 +66,17 @@ npm install
    - Copy `.env.example` to `.env.local`
    - Update the Supabase credentials if needed
 
-4. **Start the development server:**
+4. **Run Supabase migrations:**
+```bash
+cd supabase && npx supabase db reset
+```
+
+5. **Start the development server:**
 ```bash
 npm run dev
 ```
 
-5. **Open your browser:**
+6. **Open your browser:**
    Navigate to `http://localhost:3000`
 
 ## 🏗 Project Structure
@@ -135,6 +140,9 @@ The app is configured to work with Supabase:
 - **Real-time**: Ready for real-time messaging
 - **Storage**: Profile pictures and post media
 - **Database**: User profiles, posts, messages, social accounts
+
+### Messaging Flow
+Messages are stored in the `messages` table. When you start a conversation from the Radar screen the app automatically switches to the Messages tab and loads the chat history from Supabase.
 
 ## 🚀 Deployment
 

@@ -3,6 +3,8 @@ import { ChatList } from '../components/messaging/ChatList';
 import { ChatWindow } from '../components/messaging/ChatWindow';
 import { User, Message } from '../types';
 import { supabase } from '../lib/supabase';
+import { sendMessage, getConversationsForUser } from '../lib/messages';
+import { getNearbyUsers } from '../lib/location';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Props {
@@ -22,6 +24,7 @@ export const MessagesScreen: React.FC<Props> = ({
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(initialSelectedUser || undefined);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [nearbyIds, setNearbyIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isMobile] = useState(window.innerWidth < 768);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,35 +58,70 @@ export const MessagesScreen: React.FC<Props> = ({
   const loadUsersAndMessages = async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
+
       if (!currentUser) return;
 
       setCurrentUserId(currentUser.id);
 
-      // Get users who have completed their profiles for messaging
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', currentUser.id) // Exclude current user
-        .not('name', 'is', null)
-        .not('bio', 'is', null)
-        .limit(50);
+      // Load all conversations for the current user
+      const conversations = await getConversationsForUser(currentUser.id);
+      setAllMessages(conversations);
 
-      if (error) {
-        console.error('Error loading users:', error);
-        return;
+      // Determine conversation partner IDs
+      const partnerIds = Array.from(
+        new Set(
+          conversations.map(m =>
+            m.senderId === currentUser.id ? m.receiverId : m.senderId
+          )
+        )
+      );
+
+      // Get current user's location
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('latitude, longitude')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      let nearbyProfiles: any[] = [];
+      let nearIds: string[] = [];
+
+      if (myProfile?.latitude && myProfile?.longitude) {
+        const result = await getNearbyUsers(currentUser.id, {
+          latitude: myProfile.latitude,
+          longitude: myProfile.longitude,
+          timestamp: Date.now()
+        });
+
+        if (result.success && result.users) {
+          nearbyProfiles = result.users;
+          nearIds = result.users.map((u: any) => u.id);
+        }
       }
 
-      // Transform database profiles to User type - use local default instead of stock image
-      const transformedUsers: User[] = (profiles || []).map(profile => ({
+      // Load profiles for conversation partners not already in nearby list
+      const idsToFetch = partnerIds.filter(id => !nearIds.includes(id));
+
+      let historyProfiles: any[] = [];
+      if (idsToFetch.length > 0) {
+        const { data: extraProfiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', idsToFetch);
+        historyProfiles = extraProfiles || [];
+      }
+
+      const allProfiles = [...nearbyProfiles, ...historyProfiles];
+      const transformedUsers: User[] = allProfiles.map(profile => ({
         id: profile.id,
         name: profile.name,
         username: profile.username,
         dpUrl: profile.profile_photo_url || '/images/default-avatar.png',
         bio: profile.bio,
         gender: profile.gender,
-        age: profile.date_of_birth ? 
-          new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : 25,
+        age: profile.date_of_birth
+          ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()
+          : 25,
         distance: Math.floor(Math.random() * 50) + 1,
         links: {
           Twitter: profile.twitter_url || '#',
@@ -95,11 +133,15 @@ export const MessagesScreen: React.FC<Props> = ({
         twitterUrl: profile.twitter_url,
       }));
 
-      setAllUsers(transformedUsers);
-      
-      // Load real messages from database (when messaging system is implemented)
-      // For now, start with empty messages array - no more dummy data
-      setAllMessages([]);
+      const finalUsers = transformedUsers.map(u => {
+        if (!nearIds.includes(u.id)) {
+          return { ...u, name: 'Anonymous', dpUrl: '/images/default-avatar.png' };
+        }
+        return u;
+      });
+
+      setAllUsers(finalUsers);
+      setNearbyIds(nearIds);
     } catch (error) {
       console.error('Error loading users and messages:', error);
     } finally {
@@ -130,23 +172,13 @@ export const MessagesScreen: React.FC<Props> = ({
     );
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (!selectedUser) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderId: currentUserId,
-      receiverId: selectedUser.id,
-      content,
-      timestamp: new Date().toISOString(),
-      read: false
-    };
-
-    // Add to local state immediately for UI responsiveness
-    setAllMessages(prev => [...prev, newMessage]);
-    
-    // TODO: Save to database when messaging system is implemented
-    // await supabase.from('messages').insert(newMessage);
+    const newMessage = await sendMessage(currentUserId, selectedUser.id, content);
+    if (newMessage) {
+      setAllMessages(prev => [...prev, newMessage]);
+    }
   };
 
   const handleSelectUser = (user: User) => {
@@ -229,6 +261,7 @@ export const MessagesScreen: React.FC<Props> = ({
                 <ChatList
                   users={filteredUsers}
                   messages={allMessages}
+                  nearbyIds={nearbyIds}
                   selectedUser={selectedUser}
                   onSelectUser={handleSelectUser}
                   searchQuery={searchQuery}
@@ -294,6 +327,7 @@ export const MessagesScreen: React.FC<Props> = ({
               <ChatList
                 users={filteredUsers}
                 messages={allMessages}
+                nearbyIds={nearbyIds}
                 selectedUser={selectedUser}
                 onSelectUser={handleSelectUser}
                 searchQuery={searchQuery}
