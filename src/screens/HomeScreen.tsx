@@ -5,6 +5,7 @@ import { User, Post } from '../types';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
 import { getAllPosts, getUserPosts } from '../lib/posts';
+import { getNearbyUsers } from '../lib/location';
 import { transformProfileToUser } from '../../lib/utils';
 
 interface Props {
@@ -16,16 +17,17 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   const [selectedUserPosts, setSelectedUserPosts] = useState<Post[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUserProfile, setIsLoadingUserProfile] = useState(false);
   
   useEffect(() => {
-    loadCurrentUserAndPosts();
+    loadCurrentUserAndNearbyPosts();
   }, []);
 
-  const loadCurrentUserAndPosts = async () => {
+  const loadCurrentUserAndNearbyPosts = async () => {
     try {
-      // Get current user ID first
+      // Get current user ID and location first
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -37,18 +39,78 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
       setCurrentUserId(user.id);
       console.log('Current user ID:', user.id);
 
+      // Get current user's profile to check location
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('latitude, longitude')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        console.error('Error getting user profile:', profileError);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user has location data
+      if (!profile.latitude || !profile.longitude) {
+        console.log('User has no location data - showing empty feed');
+        setPosts([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setCurrentUserLocation({
+        latitude: profile.latitude,
+        longitude: profile.longitude
+      });
+
+      console.log('User location:', { latitude: profile.latitude, longitude: profile.longitude });
+
+      // Get nearby users using the same logic as radar
+      const nearbyResult = await getNearbyUsers(user.id, {
+        latitude: profile.latitude,
+        longitude: profile.longitude,
+        timestamp: Date.now()
+      }, 50); // Get more users for posts
+
+      if (!nearbyResult.success) {
+        console.error('Error getting nearby users:', nearbyResult.error);
+        setPosts([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const nearbyUsers = nearbyResult.users || [];
+      console.log('Found nearby users:', nearbyUsers.length);
+
+      if (nearbyUsers.length === 0) {
+        console.log('No nearby users found - showing empty feed');
+        setPosts([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Get user IDs of nearby users
+      const nearbyUserIds = nearbyUsers.map(user => user.id);
+      console.log('Nearby user IDs:', nearbyUserIds);
+
       // Load all posts
-      const allPosts = await getAllPosts(50);
+      const allPosts = await getAllPosts(100); // Get more posts to filter from
       console.log('All posts loaded:', allPosts.length);
       
-      // Filter out current user's posts - only show posts from other users
-      const otherUsersPosts = allPosts.filter(post => post.userId !== user.id);
-      console.log('Posts from other users:', otherUsersPosts.length);
-      console.log('Filtered out posts from current user:', allPosts.length - otherUsersPosts.length);
+      // Filter posts to only show posts from nearby users (excluding current user)
+      const nearbyUsersPosts = allPosts.filter(post => 
+        nearbyUserIds.includes(post.userId) && post.userId !== user.id
+      );
       
-      setPosts(otherUsersPosts);
+      console.log('Posts from nearby users:', nearbyUsersPosts.length);
+      console.log('Filtered out posts from current user and non-nearby users:', allPosts.length - nearbyUsersPosts.length);
+      
+      setPosts(nearbyUsersPosts);
     } catch (error) {
-      console.error('Error loading posts:', error);
+      console.error('Error loading nearby posts:', error);
+      setPosts([]);
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +186,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
       <div className="min-h-full bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading feed...</p>
+          <p className="text-gray-400">Loading nearby posts...</p>
         </div>
       </div>
     );
@@ -138,11 +200,14 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
           <svg className="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
-          <h1 className="text-xl font-bold text-white">Feed</h1>
+          <div>
+            <h1 className="text-xl font-bold text-white">Nearby Feed</h1>
+            <p className="text-xs text-gray-400">Posts from people around you</p>
+          </div>
         </div>
       </div>
 
-      {/* Posts Feed - Only showing posts from other users */}
+      {/* Posts Feed - Only showing posts from nearby users */}
       <div className="px-4 py-4 space-y-6 pb-20">
         {posts.length > 0 ? (
           <PostsFeed posts={posts} onUserClick={handleUserClick} />
@@ -150,14 +215,15 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <p className="text-gray-400 mb-2">No posts from other users yet</p>
+            <p className="text-gray-400 mb-2">No posts from nearby people</p>
             <p className="text-gray-500 text-sm">
-              {currentUserId ? 
-                "When other users create posts, they'll appear here!" : 
-                "Posts from the community will appear here!"
+              {!currentUserLocation ? 
+                "Enable location in Radar to see posts from people around you!" : 
+                "When people nearby create posts, they'll appear here!"
               }
             </p>
           </div>
