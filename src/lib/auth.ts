@@ -1,4 +1,5 @@
 import { supabase, ensureSession } from './supabase'
+import { locationToggleManager } from './locationToggle'
 
 export interface AuthResponse {
   success: boolean
@@ -508,6 +509,8 @@ export const signOut = async (): Promise<AuthResponse> => {
   }
 
   try {
+    await locationToggleManager.turnOff()
+    locationToggleManager.clearPersistedState()
     const { error } = await supabase!.auth.signOut()
     
     if (error) {
@@ -572,6 +575,8 @@ export const getCurrentUser = async (): Promise<AuthResponse> => {
 export const handleRefreshTokenError = async (): Promise<void> => {
   try {
     console.log('Handling refresh token error - signing out user')
+    await locationToggleManager.turnOff()
+    locationToggleManager.clearPersistedState()
     await supabase!.auth.signOut()
     
     // Clear any cached data

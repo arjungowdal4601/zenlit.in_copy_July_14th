@@ -43,7 +43,7 @@ export default function App() {
         await handleAuthenticatedUser(session.user);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
-        handleSignOut();
+        await handleSignOut();
       } else if (event === 'TOKEN_REFRESHED' && session) {
         console.log('Token refreshed successfully');
         // Session is automatically updated by Supabase
@@ -209,7 +209,10 @@ export default function App() {
     setCurrentScreen('app');
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    // Ensure location is cleared from the database
+    await locationToggleManager.turnOff();
+
     setIsLoggedIn(false);
     setCurrentUser(null);
     setCurrentScreen('welcome');
@@ -217,7 +220,7 @@ export default function App() {
     setSelectedUser(null);
     setSelectedChatUser(null);
     setIsNavigationVisible(true);
-    
+
     // Clear location toggle state on logout
     locationToggleManager.clearPersistedState();
   };
@@ -234,7 +237,7 @@ export default function App() {
     } catch (error) {
       console.error('Logout error:', error);
       // Force sign out anyway
-      handleSignOut();
+      await handleSignOut();
     }
   };
 
