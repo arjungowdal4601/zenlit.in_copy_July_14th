@@ -143,10 +143,15 @@ export const RadarScreen: React.FC<Props> = ({
   // Handle location errors from toggle manager
   const handleLocationError = useCallback((error: string) => {
     if (!mountedRef.current) return;
-    
+
     console.error('Location error:', error);
     setLocationError(error);
   }, []);
+
+  // Keep callbacks in sync with manager
+  useEffect(() => {
+    locationToggleManager.setCallbacks(handleLocationUpdate, handleLocationError);
+  }, [handleLocationUpdate, handleLocationError]);
 
   // Load users with exact coordinate match
   const loadNearbyUsers = async (currentUserId: string, location: UserLocation) => {
@@ -214,11 +219,14 @@ export const RadarScreen: React.FC<Props> = ({
         if (result.success) {
           setIsLocationEnabled(true);
           console.log('✅ Location toggle turned ON successfully');
-          
+
           // Load nearby users after successful toggle
           const managerState = locationToggleManager.getState();
-          if (currentUser && managerState.currentLocation) {
-            await loadNearbyUsers(currentUser.id, managerState.currentLocation);
+          if (managerState.currentLocation) {
+            setCurrentLocation(managerState.currentLocation);
+            if (currentUser) {
+              await loadNearbyUsers(currentUser.id, managerState.currentLocation);
+            }
           }
         } else {
           console.error('❌ Failed to turn ON location toggle:', result.error);
@@ -337,8 +345,14 @@ export const RadarScreen: React.FC<Props> = ({
     try {
       // Refresh location if toggle is ON
       const result = await locationToggleManager.refreshLocation();
-      
-      if (!result.success) {
+
+      if (result.success) {
+        const state = locationToggleManager.getState();
+        if (state.currentLocation && currentUser) {
+          await loadNearbyUsers(currentUser.id, state.currentLocation);
+          setCurrentLocation(state.currentLocation);
+        }
+      } else {
         setLocationError(result.error || 'Failed to refresh location');
       }
     } catch (error) {

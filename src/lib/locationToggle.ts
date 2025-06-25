@@ -148,6 +148,15 @@ class LocationToggleManager {
     return { ...this.state };
   }
 
+  // Update callbacks without reinitializing
+  setCallbacks(
+    onLocationUpdate?: (location: UserLocation | null) => void,
+    onError?: (error: string) => void
+  ) {
+    this.onLocationUpdate = onLocationUpdate;
+    this.onError = onError;
+  }
+
   // Check if toggle is enabled (for UI state)
   isEnabled() {
     return this.state.isEnabled;
