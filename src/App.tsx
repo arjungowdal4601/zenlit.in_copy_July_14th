@@ -14,6 +14,7 @@ import { supabase, onAuthStateChange } from './lib/supabase';
 import { checkSession, handleRefreshTokenError } from './lib/auth';
 import { locationToggleManager } from './lib/locationToggle';
 import { transformProfileToUser } from '../lib/utils';
+import { testSupabaseConnection, checkEnvironmentVariables } from './utils/testSupabaseConnection';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'profileSetup' | 'app'>('welcome');
@@ -27,15 +28,56 @@ export default function App() {
   const [isClient, setIsClient] = useState(false);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Ensure we're on the client side before doing anything
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  // Test Supabase connection on app load
+  useEffect(() => {
+    if (isClient) {
+      testConnection();
+    }
+  }, [isClient]);
+
+  const testConnection = async () => {
+    console.log('🔧 Starting Supabase connection test...');
+    
+    // Check environment variables first
+    const envCheck = checkEnvironmentVariables();
+    
+    if (!envCheck.NEXT_PUBLIC_SUPABASE_URL || !envCheck.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      const missingVars = [];
+      if (!envCheck.NEXT_PUBLIC_SUPABASE_URL) missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
+      if (!envCheck.NEXT_PUBLIC_SUPABASE_ANON_KEY) missingVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      
+      setConnectionError(`Missing environment variables: ${missingVars.join(', ')}`);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Test the actual connection
+    const connectionTest = await testSupabaseConnection();
+    
+    if (!connectionTest.success) {
+      console.error('❌ Supabase connection failed:', connectionTest.error);
+      setConnectionError(connectionTest.error);
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log('✅ Supabase connection successful');
+    setConnectionError(null);
+    
+    // Proceed with normal app initialization
+    checkAuthStatus();
+  };
+
   // Set up auth state listener
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || connectionError) return;
 
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       console.log('Auth state change:', event, session?.user?.id);
@@ -56,14 +98,7 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
-  }, [isClient]);
-
-  // Check authentication status on app load
-  useEffect(() => {
-    if (isClient) {
-      checkAuthStatus();
-    }
-  }, [isClient]);
+  }, [isClient, connectionError]);
 
   const checkAuthStatus = async () => {
     try {
@@ -286,6 +321,40 @@ export default function App() {
   // Don't render anything until we're on the client
   if (!isClient) {
     return null;
+  }
+
+  // Show connection error screen
+  if (connectionError) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Connection Error</h2>
+          <p className="text-gray-300 mb-6">{connectionError}</p>
+          <div className="space-y-3">
+            <button
+              onClick={testConnection}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all"
+            >
+              Retry Connection
+            </button>
+            <div className="text-left bg-gray-800 rounded-lg p-4 text-sm">
+              <h3 className="text-white font-medium mb-2">Troubleshooting:</h3>
+              <ul className="text-gray-300 space-y-1 text-xs">
+                <li>• Check if Supabase is running: <code className="bg-gray-700 px-1 rounded">npx supabase start</code></li>
+                <li>• Verify environment variables in .env.local</li>
+                <li>• Check network connectivity</li>
+                <li>• Ensure no firewall is blocking access</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Show loading screen while checking auth
