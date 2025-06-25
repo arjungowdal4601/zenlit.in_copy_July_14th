@@ -31,6 +31,10 @@ export const ChatWindow = ({
   };
 
   useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
+  useEffect(() => {
     setChatMessages(messages);
     scrollToBottom();
   }, [messages]);
@@ -123,7 +127,6 @@ export const ChatWindow = ({
             />
             <div className="text-left">
               <h3 className="font-semibold text-white">{user.name}</h3>
-              <p className="text-xs text-gray-400">Active now</p>
             </div>
           </button>
         </div>

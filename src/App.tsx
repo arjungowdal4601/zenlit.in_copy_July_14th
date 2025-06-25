@@ -6,6 +6,7 @@ import { ProfileSetupScreen } from './screens/ProfileSetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { RadarScreen } from './screens/RadarScreen';
 import { UserProfileScreen } from './screens/UserProfileScreen';
+import { EditProfileScreen } from './screens/EditProfileScreen';
 import { CreatePostScreen } from './screens/CreatePostScreen';
 import { MessagesScreen } from './screens/MessagesScreen';
 import { UserGroupIcon, Squares2X2Icon, UserIcon, PlusIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
@@ -27,6 +28,7 @@ export default function App() {
   const [isClient, setIsClient] = useState(false);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // Ensure we're on the client side before doing anything
   useEffect(() => {
@@ -268,6 +270,20 @@ export default function App() {
     setActiveTab('profile');
   };
 
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleProfileSave = (updatedUser: User) => {
+    setIsEditingProfile(false);
+    if (selectedUser && selectedUser.id === updatedUser.id) {
+      setSelectedUser(updatedUser);
+    }
+    if (currentUser && currentUser.id === updatedUser.id) {
+      setCurrentUser({ ...currentUser, ...updatedUser });
+    }
+  };
+
   const handleNavigateToCreate = () => {
     setActiveTab('create');
   };
@@ -360,10 +376,20 @@ export default function App() {
             )}
             {activeTab === 'profile' && profileUser && (
               <div className="h-full overflow-y-auto mobile-scroll">
-                <UserProfileScreen
-                  user={profileUser}
-                  onBack={selectedUser ? () => setSelectedUser(null) : undefined}
-                />
+                {isEditingProfile ? (
+                  <EditProfileScreen
+                    user={profileUser}
+                    onBack={() => setIsEditingProfile(false)}
+                    onSave={handleProfileSave}
+                  />
+                ) : (
+                  <UserProfileScreen
+                    user={profileUser}
+                    onBack={selectedUser ? () => setSelectedUser(null) : undefined}
+                    onEditProfile={handleEditProfile}
+                    onLogout={handleLogout}
+                  />
+                )}
               </div>
             )}
           </div>
