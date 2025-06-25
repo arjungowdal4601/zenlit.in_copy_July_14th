@@ -26,6 +26,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
   // Ensure we're on the client side before doing anything
   useEffect(() => {
@@ -348,11 +349,12 @@ export default function App() {
             )}
             {activeTab === 'messages' && (
               <div className="h-full">
-                <MessagesScreen 
+                <MessagesScreen
                   selectedUser={selectedChatUser}
                   onClearSelectedUser={() => setSelectedChatUser(null)}
                   onViewProfile={handleViewProfile}
                   onNavigationVisibilityChange={handleNavigationVisibilityChange}
+                  onUnreadChange={setHasUnreadMessages}
                 />
               </div>
             )}
@@ -407,7 +409,12 @@ export default function App() {
                   activeTab === 'messages' ? 'text-blue-500' : 'text-gray-400'
                 }`}
               >
-                <ChatBubbleLeftIcon className="h-6 w-6 mb-1" />
+                <div className="relative">
+                  <ChatBubbleLeftIcon className="h-6 w-6 mb-1" />
+                  {hasUnreadMessages && activeTab !== 'messages' && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                  )}
+                </div>
                 <span className="text-xs font-medium">Messages</span>
               </button>
               
