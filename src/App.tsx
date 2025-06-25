@@ -5,7 +5,7 @@ import { LoginScreen } from './screens/LoginScreen';
 import { ProfileSetupScreen } from './screens/ProfileSetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { RadarScreen } from './screens/RadarScreen';
-import { ProfileScreen } from './screens/ProfileScreen';
+import { UserProfileScreen } from './screens/UserProfileScreen';
 import { CreatePostScreen } from './screens/CreatePostScreen';
 import { MessagesScreen } from './screens/MessagesScreen';
 import { UserGroupIcon, Squares2X2Icon, UserIcon, PlusIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
@@ -13,6 +13,7 @@ import { User } from './types';
 import { supabase, onAuthStateChange } from './lib/supabase';
 import { checkSession, handleRefreshTokenError } from './lib/auth';
 import { locationToggleManager } from './lib/locationToggle';
+import { transformProfileToUser } from '../lib/utils';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'login' | 'profileSetup' | 'app'>('welcome');
@@ -275,6 +276,12 @@ export default function App() {
     setIsNavigationVisible(visible);
   };
 
+  const profileUser = selectedUser
+    ? selectedUser
+    : currentUser
+    ? transformProfileToUser(currentUser)
+    : null;
+
   // Don't render anything until we're on the client
   if (!isClient) {
     return null;
@@ -349,14 +356,11 @@ export default function App() {
                 />
               </div>
             )}
-            {activeTab === 'profile' && (
+            {activeTab === 'profile' && profileUser && (
               <div className="h-full overflow-y-auto mobile-scroll">
-                <ProfileScreen 
-                  user={selectedUser} 
-                  currentUser={currentUser}
-                  onBack={() => setSelectedUser(null)}
-                  onLogout={handleLogout}
-                  onNavigateToCreate={handleNavigateToCreate}
+                <UserProfileScreen
+                  user={profileUser}
+                  onBack={selectedUser ? () => setSelectedUser(null) : undefined}
                 />
               </div>
             )}

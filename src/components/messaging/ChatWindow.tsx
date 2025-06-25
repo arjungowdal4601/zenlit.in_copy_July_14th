@@ -13,10 +13,10 @@ interface ChatWindowProps {
   onViewProfile?: (user: User) => void;
 }
 
-export const ChatWindow = ({ 
-  user, 
-  messages, 
-  onSendMessage, 
+export const ChatWindow = ({
+  user,
+  messages,
+  onSendMessage,
   currentUserId,
   onBack,
   onViewProfile
@@ -31,7 +31,10 @@ export const ChatWindow = ({
     scrollToBottom();
   }, [messages]);
 
+  const isAnonymous = user.name === 'Anonymous';
+
   const handleProfileClick = () => {
+    if (isAnonymous) return;
     if (onViewProfile) {
       onViewProfile(user);
     }
@@ -54,7 +57,13 @@ export const ChatWindow = ({
           {/* Clickable profile area */}
           <button
             onClick={handleProfileClick}
-            className="flex items-center flex-1 hover:bg-gray-800/50 rounded-lg p-2 -m-2 transition-colors active:scale-95"
+            disabled={isAnonymous}
+            title={isAnonymous ? 'User not available' : undefined}
+            className={`flex items-center flex-1 rounded-lg p-2 -m-2 transition-colors ${
+              isAnonymous
+                ? 'cursor-not-allowed text-gray-400'
+                : 'hover:bg-gray-800/50 active:scale-95'
+            }`}
           >
             <img 
               src={user.dpUrl} 
