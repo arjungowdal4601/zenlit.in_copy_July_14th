@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Message, User } from '../../types';
+import { supabase } from '../../lib/supabase';
+import { markMessagesAsRead } from '../../lib/messages';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -22,14 +24,63 @@ export const ChatWindow = ({
   onViewProfile
 }: ChatWindowProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [chatMessages, setChatMessages] = useState<Message[]>(messages);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
+    setChatMessages(messages);
     scrollToBottom();
   }, [messages]);
+
+  // Subscribe to realtime messages for this conversation
+  useEffect(() => {
+    const channel = supabase.channel(`chat-${currentUserId}-${user.id}`);
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages' },
+      (payload) => {
+        const data = payload.new as any;
+        const newMessage: Message = {
+          id: data.id,
+          senderId: data.sender_id,
+          receiverId: data.receiver_id,
+          content: data.content,
+          timestamp: data.created_at,
+          read: data.read,
+        };
+
+        if (
+          (newMessage.senderId === user.id && newMessage.receiverId === currentUserId) ||
+          (newMessage.senderId === currentUserId && newMessage.receiverId === user.id)
+        ) {
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+
+          // Mark message as read if it's from the other user
+          if (newMessage.senderId === user.id) {
+            markMessagesAsRead(currentUserId, user.id);
+          }
+        }
+      }
+    );
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, user.id]);
+
+  // Mark existing unread messages as read on mount
+  useEffect(() => {
+    markMessagesAsRead(currentUserId, user.id);
+  }, [currentUserId, user.id]);
 
   const isAnonymous = user.name === 'Anonymous';
 
@@ -80,7 +131,7 @@ export const ChatWindow = ({
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
+        {chatMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <img 
@@ -93,7 +144,7 @@ export const ChatWindow = ({
           </div>
         ) : (
           <>
-            {messages.map((message) => (
+            {chatMessages.map((message) => (
               <MessageBubble
                 key={message.id}
                 message={message}

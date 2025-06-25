@@ -17,6 +17,7 @@ interface ChatListProps {
   selectedUser?: User;
   onSelectUser: (user: User) => void;
   searchQuery?: string;
+  unreadByUser?: Record<string, boolean>;
 }
 
 export const ChatList = ({
@@ -25,7 +26,8 @@ export const ChatList = ({
   nearbyIds,
   selectedUser,
   onSelectUser,
-  searchQuery = ''
+  searchQuery = '',
+  unreadByUser = {}
 }: ChatListProps) => {
   const [nearbyContacts, setNearbyContacts] = useState<Contact[]>([]);
   const [historyOnlyContacts, setHistoryOnlyContacts] = useState<Contact[]>([]);
@@ -100,11 +102,14 @@ export const ChatList = ({
             >
               <div className="flex items-center gap-3 w-full">
                 <div className="relative flex-shrink-0">
-                  <img 
-                    src={user.dpUrl} 
-                    alt={user.name} 
+                  <img
+                    src={user.dpUrl}
+                    alt={user.name}
                     className="w-11 h-11 rounded-full object-cover ring-2 ring-blue-500"
                   />
+                  {unreadByUser[user.id] && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
@@ -150,7 +155,11 @@ export const ChatList = ({
                   }`}
                 >
                   <div className="flex items-center gap-3 w-full">
-                    <div className="relative flex-shrink-0 w-11 h-11 bg-gray-700 rounded-full" />
+                    <div className="relative flex-shrink-0 w-11 h-11 bg-gray-700 rounded-full">
+                      {unreadByUser[user.id] && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex flex-col min-w-0">

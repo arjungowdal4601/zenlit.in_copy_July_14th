@@ -91,3 +91,21 @@ export async function getConversationsForUser(
     return [];
   }
 }
+
+export async function markMessagesAsRead(
+  currentUserId: string,
+  partnerId: string
+) {
+  try {
+    await supabase
+      .from('messages')
+      .update({ read: true })
+      .match({
+        sender_id: partnerId,
+        receiver_id: currentUserId,
+        read: false,
+      });
+  } catch (err) {
+    console.error('Error marking messages as read:', err);
+  }
+}

@@ -3,7 +3,7 @@ import { ChatList } from '../components/messaging/ChatList';
 import { ChatWindow } from '../components/messaging/ChatWindow';
 import { User, Message } from '../types';
 import { supabase } from '../lib/supabase';
-import { sendMessage, getConversationsForUser } from '../lib/messages';
+import { sendMessage, getConversationsForUser, markMessagesAsRead } from '../lib/messages';
 import { getNearbyUsers } from '../lib/location';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -12,13 +12,15 @@ interface Props {
   onClearSelectedUser?: () => void;
   onViewProfile?: (user: User) => void;
   onNavigationVisibilityChange?: (visible: boolean) => void; // New prop to control nav visibility
+  onUnreadChange?: (hasUnread: boolean) => void;
 }
 
-export const MessagesScreen: React.FC<Props> = ({ 
-  selectedUser: initialSelectedUser, 
+export const MessagesScreen: React.FC<Props> = ({
+  selectedUser: initialSelectedUser,
   onClearSelectedUser,
   onViewProfile,
-  onNavigationVisibilityChange
+  onNavigationVisibilityChange,
+  onUnreadChange
 }) => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -28,6 +30,12 @@ export const MessagesScreen: React.FC<Props> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isMobile] = useState(window.innerWidth < 768);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasUnread, setHasUnread] = useState(false);
+  const [unreadByUser, setUnreadByUser] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    onUnreadChange?.(hasUnread);
+  }, [hasUnread, onUnreadChange]);
 
   useEffect(() => {
     loadUsersAndMessages();
@@ -54,6 +62,61 @@ export const MessagesScreen: React.FC<Props> = ({
       }
     };
   }, [selectedUser, isMobile, onNavigationVisibilityChange]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      setUnreadByUser((prev) => {
+        const updated = { ...prev, [selectedUser.id]: false };
+        const stillUnread = Object.entries(updated).some(([id, val]) => val && id !== selectedUser.id);
+        setHasUnread(stillUnread);
+        onUnreadChange?.(stillUnread);
+        return updated;
+      });
+      markMessagesAsRead(currentUserId, selectedUser.id);
+    }
+  }, [selectedUser, currentUserId, onUnreadChange]);
+
+  // Listen for new messages in real time
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase.channel(`inbox-${currentUserId}`);
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${currentUserId}` },
+      (payload) => {
+        const data = payload.new as any;
+        const incoming: Message = {
+          id: data.id,
+          senderId: data.sender_id,
+          receiverId: data.receiver_id,
+          content: data.content,
+          timestamp: data.created_at,
+          read: data.read,
+        };
+
+        setAllMessages((prev) => {
+          if (prev.some((m) => m.id === incoming.id)) return prev;
+          return [...prev, incoming];
+        });
+
+        if (selectedUser?.id !== incoming.senderId) {
+          setHasUnread(true);
+          setUnreadByUser((prev) => ({ ...prev, [incoming.senderId]: true }));
+          onUnreadChange?.(true);
+        } else {
+          markMessagesAsRead(currentUserId, incoming.senderId);
+        }
+      }
+    );
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, selectedUser, onUnreadChange]);
 
   const loadUsersAndMessages = async () => {
     try {
@@ -178,11 +241,20 @@ export const MessagesScreen: React.FC<Props> = ({
     const newMessage = await sendMessage(currentUserId, selectedUser.id, content);
     if (newMessage) {
       setAllMessages(prev => [...prev, newMessage]);
+      setUnreadByUser((prev) => ({ ...prev, [selectedUser.id]: false }));
     }
   };
 
   const handleSelectUser = (user: User) => {
     setSelectedUser(user);
+    setUnreadByUser((prev) => {
+      const updated = { ...prev, [user.id]: false };
+      const stillUnread = Object.entries(updated).some(([id, val]) => val && id !== user.id);
+      setHasUnread(stillUnread);
+      onUnreadChange?.(stillUnread);
+      return updated;
+    });
+    markMessagesAsRead(currentUserId, user.id);
     if (onClearSelectedUser) {
       onClearSelectedUser();
     }
@@ -190,6 +262,8 @@ export const MessagesScreen: React.FC<Props> = ({
 
   const handleBackToList = () => {
     setSelectedUser(undefined);
+    const stillUnread = Object.values(unreadByUser).some(Boolean);
+    onUnreadChange?.(stillUnread);
     if (onClearSelectedUser) {
       onClearSelectedUser();
     }
@@ -265,6 +339,7 @@ export const MessagesScreen: React.FC<Props> = ({
                   selectedUser={selectedUser}
                   onSelectUser={handleSelectUser}
                   searchQuery={searchQuery}
+                  unreadByUser={unreadByUser}
                 />
               </div>
             </div>
@@ -331,6 +406,7 @@ export const MessagesScreen: React.FC<Props> = ({
                 selectedUser={selectedUser}
                 onSelectUser={handleSelectUser}
                 searchQuery={searchQuery}
+                unreadByUser={unreadByUser}
               />
             </div>
           </div>
