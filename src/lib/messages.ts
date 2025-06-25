@@ -1,11 +1,16 @@
 import { supabase } from './supabase';
 import { Message } from '../types';
+import { isValidUuid } from '../utils/uuid';
 
 export async function sendMessage(
   senderId: string,
   receiverId: string,
   content: string
 ): Promise<Message | null> {
+  if (!isValidUuid(senderId) || !isValidUuid(receiverId)) {
+    console.warn('sendMessage called with invalid UUIDs');
+    return null;
+  }
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -37,6 +42,10 @@ export async function getConversation(
   userId1: string,
   userId2: string
 ): Promise<Message[]> {
+  if (!isValidUuid(userId1) || !isValidUuid(userId2)) {
+    console.warn('getConversation called with invalid UUIDs');
+    return [];
+  }
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -67,6 +76,10 @@ export async function getConversation(
 export async function getConversationsForUser(
   userId: string
 ): Promise<Message[]> {
+  if (!isValidUuid(userId)) {
+    console.warn('getConversationsForUser called with invalid UUID');
+    return [];
+  }
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -96,6 +109,10 @@ export async function markMessagesAsRead(
   currentUserId: string,
   partnerId: string
 ) {
+  if (!isValidUuid(currentUserId) || !isValidUuid(partnerId)) {
+    console.warn('markMessagesAsRead called with invalid UUIDs');
+    return;
+  }
   try {
     await supabase
       .from('messages')

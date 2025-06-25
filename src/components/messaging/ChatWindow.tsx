@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Message, User } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { markMessagesAsRead } from '../../lib/messages';
+import { isValidUuid } from '../../utils/uuid';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -67,7 +68,7 @@ export const ChatWindow = ({
           });
 
           // Mark message as read if it's from the other user
-          if (newMessage.senderId === user.id) {
+          if (newMessage.senderId === user.id && isValidUuid(currentUserId)) {
             markMessagesAsRead(currentUserId, user.id);
           }
         }
@@ -83,7 +84,9 @@ export const ChatWindow = ({
 
   // Mark existing unread messages as read on mount
   useEffect(() => {
-    markMessagesAsRead(currentUserId, user.id);
+    if (isValidUuid(currentUserId)) {
+      markMessagesAsRead(currentUserId, user.id);
+    }
   }, [currentUserId, user.id]);
 
   const isAnonymous = user.name === 'Anonymous';
