@@ -10,7 +10,7 @@ A modern social media application built with Next.js 15, TypeScript, and Tailwin
 - **Social Media Verification** - OAuth integration for Instagram, Facebook, LinkedIn, Twitter, and Google
 - **Local Discovery** - Radar feature to find nearby users
 - **Messaging** - Real-time chat functionality
-- **Content Sharing** - Photo/video posts with camera integration
+- **Content Sharing** - Photo/video posts with advanced camera features
 - **Stories** - Temporary content sharing
 
 ### Social Verification System
@@ -44,7 +44,7 @@ A modern social media application built with Next.js 15, TypeScript, and Tailwin
 2. **Login/Signup** - Authentication with email verification
 3. **Radar Screen** - Discover nearby users
 4. **Feed Screen** - View posts from all users
-5. **Create Post** - Share photos/videos with camera integration
+5. **Create Post** - Share photos/videos with an improved camera interface (flash toggle, camera flip, gallery import)
 6. **Messages** - Chat with other users
 7. **Profile Screen** - User profiles with social verification
 8. **Edit Profile** - Update profile information and verify social accounts
@@ -140,6 +140,11 @@ The app is configured to work with Supabase:
 - **Real-time**: Ready for real-time messaging
 - **Storage**: Profile pictures and post media
 - **Database**: User profiles, posts, messages, social accounts
+
+The `profiles` table also stores optional `latitude` and `longitude` fields for
+local discovery. These coordinates are cleared on logout and automatically
+removed if they haven't been updated in five minutes. A sample edge function for
+this scheduled cleanup lives in `supabase/functions/cleanup-stale-locations`.
 
 ### Messaging Flow
 Messages are stored in the `messages` table. When you start a conversation from the Radar screen the app automatically switches to the Messages tab and loads the chat history from Supabase.

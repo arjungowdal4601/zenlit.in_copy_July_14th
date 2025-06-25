@@ -225,6 +225,24 @@ export default function App() {
   const handleLogout = async () => {
     try {
       if (supabase) {
+        const {
+          data: { user }
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              latitude: null,
+              longitude: null,
+              location_last_updated_at: null
+            })
+            .eq('id', user.id);
+          if (updateError) {
+            console.error('Failed to clear location on logout:', updateError);
+          }
+        }
+
         const { error } = await supabase.auth.signOut();
         if (error) {
           console.error('Logout error:', error);

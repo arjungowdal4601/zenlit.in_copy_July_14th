@@ -508,6 +508,22 @@ export const signOut = async (): Promise<AuthResponse> => {
   }
 
   try {
+    // Attempt to clear stored location data before signing out
+    const { data: { user } } = await supabase!.auth.getUser()
+    if (user) {
+      const { error: updateError } = await supabase!
+        .from('profiles')
+        .update({
+          latitude: null,
+          longitude: null,
+          location_last_updated_at: null
+        })
+        .eq('id', user.id)
+      if (updateError) {
+        console.error('Failed to clear location on logout:', updateError.message)
+      }
+    }
+
     const { error } = await supabase!.auth.signOut()
     
     if (error) {
