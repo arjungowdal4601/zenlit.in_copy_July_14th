@@ -198,7 +198,8 @@ export const saveUserLocation = async (
       .update({
         latitude: latRounded,
         longitude: lonRounded,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        location_last_updated_at: new Date().toISOString()
       })
       .eq('id', userId);
 

@@ -141,6 +141,11 @@ The app is configured to work with Supabase:
 - **Storage**: Profile pictures and post media
 - **Database**: User profiles, posts, messages, social accounts
 
+The `profiles` table also stores optional `latitude` and `longitude` fields for
+local discovery. These coordinates are cleared on logout and automatically
+removed if they haven't been updated in five minutes. A sample edge function for
+this scheduled cleanup lives in `supabase/functions/cleanup-stale-locations`.
+
 ### Messaging Flow
 Messages are stored in the `messages` table. When you start a conversation from the Radar screen the app automatically switches to the Messages tab and loads the chat history from Supabase.
 
