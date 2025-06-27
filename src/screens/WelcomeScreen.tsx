@@ -24,7 +24,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onGetStarted }) => {
           />
           
           <h1 className="text-5xl font-bold text-white">Zenlit</h1>
-          <p className="text-sm text-gray-400 mt-2">Made with Bolt</p>
+          <p className="text-sm text-gray-400 mt-2">Built with Bolt.new</p>
         </div>
         
         {/* Get Started Button */}
