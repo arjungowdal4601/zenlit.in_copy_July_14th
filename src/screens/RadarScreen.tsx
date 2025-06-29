@@ -393,7 +393,7 @@ export const RadarScreen: React.FC<Props> = ({
         <BoltBadge />
         <button
           onClick={handleBackFromProfile}
-          className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
+          className="fixed top-4 right-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
         >
           <ChevronLeftIcon className="w-5 h-5 text-white" />
         </button>
@@ -416,13 +416,13 @@ export const RadarScreen: React.FC<Props> = ({
   }
 
   return (
-    <div className="min-h-full bg-black">
+    <div className="h-full bg-black flex flex-col">
       {/* Bolt.new Badge */}
       <BoltBadge />
 
-      {/* Header - moved down to accommodate badge */}
-      <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800" style={{ marginTop: '40px' }}>
-        <div className="px-4 py-4">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-800 pt-20 pb-4">
+        <div className="px-4">
           <div className="flex items-center justify-between">
             {/* Left side - Title and Location Status */}
             <div className="flex-1">
@@ -453,11 +453,15 @@ export const RadarScreen: React.FC<Props> = ({
                 )}
               </div>
             </div>
-            
-            {/* Right side - Location Toggle and Refresh - moved down */}
-            <div className="flex flex-col items-end gap-1 ml-4">
+          </div>
+        </div>
+
+        {/* Controls Section - moved below badge */}
+        <div className="px-4 mt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Show Nearby</span>
+                <span className="text-sm text-gray-400">Show Nearby</span>
                 <input
                   type="checkbox"
                   className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -469,7 +473,7 @@ export const RadarScreen: React.FC<Props> = ({
               <button
                 onClick={handleRefresh}
                 disabled={!isLocationEnabled || isRefreshing}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowPathIcon className="w-4 h-4" />
                 Refresh
@@ -481,7 +485,7 @@ export const RadarScreen: React.FC<Props> = ({
 
       {/* Location Status Info */}
       {!isLocationEnabled && (
-        <div className="px-4 py-3 bg-blue-900/20 border-b border-blue-700/30">
+        <div className="flex-shrink-0 px-4 py-3 bg-blue-900/20 border-b border-blue-700/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ExclamationTriangleIcon className="w-5 h-5 text-blue-500" />
@@ -507,7 +511,7 @@ export const RadarScreen: React.FC<Props> = ({
 
       {/* Error Message */}
       {locationError && (
-        <div className="px-4 py-3 bg-red-900/20 border-b border-red-700/30">
+        <div className="flex-shrink-0 px-4 py-3 bg-red-900/20 border-b border-red-700/30">
           <div className="flex items-center gap-2">
             <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
             <span className="text-sm text-red-400">{locationError}</span>
@@ -515,8 +519,8 @@ export const RadarScreen: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Users List */}
-      <div className="px-4 py-4 space-y-4 pb-20 overflow-y-auto">
+      {/* Scrollable Users List */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {isLocationEnabled ? (
           currentLocation ? (
             users.length > 0 ? (
