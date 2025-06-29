@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChatList } from '../components/messaging/ChatList';
 import { ChatWindow } from '../components/messaging/ChatWindow';
-import { BoltBadge } from '../components/common/BoltBadge';
 import { User, Message } from '../types';
 import { supabase } from '../lib/supabase';
 import { sendMessage, getConversationsForUser, markMessagesAsRead } from '../lib/messages';
@@ -292,9 +291,6 @@ export const MessagesScreen: React.FC<Props> = ({
 
   return (
     <div className="h-full bg-black flex">
-      {/* Bolt.new Badge */}
-      <BoltBadge />
-
       {/* Mobile: Show either chat list or chat window */}
       {isMobile ? (
         <>
