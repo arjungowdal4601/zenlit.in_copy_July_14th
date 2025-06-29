@@ -42,11 +42,54 @@ export const UserProfileScreen: React.FC<Props> = ({ user, onBack, onEditProfile
 
   return (
     <div className="h-full bg-black flex flex-col">
-      <BoltBadge />
-      
       {/* Header */}
       <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm">
         <div className="flex items-center gap-3 px-4 py-3">
+          {/* Left side - Badge and Settings */}
+          <div className="flex items-center gap-3">
+            <BoltBadge />
+            
+            {(onEditProfile || onLogout) && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowMenu((m) => !m)}
+                  className="p-2 rounded-full hover:bg-gray-800 active:scale-95 transition-all"
+                >
+                  <Cog6ToothIcon className="w-5 h-5 text-white" />
+                </button>
+                {showMenu && (
+                  <div className="absolute top-full left-0 mt-2 bg-gray-800 rounded-lg shadow-lg py-1 z-10">
+                    {onEditProfile && (
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          onEditProfile();
+                        }}
+                        className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
+                      >
+                        Edit Profile
+                      </button>
+                    )}
+                    {onLogout && (
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          onLogout();
+                        }}
+                        className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
+                      >
+                        Logout
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1" />
+          
+          {/* Right side - Back Button */}
           {onBack && (
             <button
               onClick={onBack}
@@ -54,45 +97,6 @@ export const UserProfileScreen: React.FC<Props> = ({ user, onBack, onEditProfile
             >
               <ChevronLeftIcon className="w-5 h-5 text-white" />
             </button>
-          )}
-          
-          <div className="flex-1" />
-          
-          {(onEditProfile || onLogout) && (
-            <div className="relative">
-              <button
-                onClick={() => setShowMenu((m) => !m)}
-                className="p-2 rounded-full hover:bg-gray-800 active:scale-95 transition-all"
-              >
-                <Cog6ToothIcon className="w-5 h-5 text-white" />
-              </button>
-              {showMenu && (
-                <div className="absolute top-full right-0 mt-2 bg-gray-800 rounded-lg shadow-lg py-1 z-10">
-                  {onEditProfile && (
-                    <button
-                      onClick={() => {
-                        setShowMenu(false);
-                        onEditProfile();
-                      }}
-                      className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
-                    >
-                      Edit Profile
-                    </button>
-                  )}
-                  {onLogout && (
-                    <button
-                      onClick={() => {
-                        setShowMenu(false);
-                        onLogout();
-                      }}
-                      className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
-                    >
-                      Logout
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
           )}
         </div>
       </div>

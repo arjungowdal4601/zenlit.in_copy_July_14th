@@ -416,67 +416,66 @@ export const RadarScreen: React.FC<Props> = ({
 
   return (
     <div className="h-full bg-black flex flex-col">
-      <BoltBadge />
-      
       {/* Header */}
       <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
-            {/* Left side - Title */}
-            <div className="flex-1">
+            {/* Left side - People Nearby and Location Tracking */}
+            <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold text-white">People Nearby</h1>
+              <div className="flex items-center gap-2">
+                {isLocationEnabled ? (
+                  <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse" />
+                ) : (
+                  <MapPinIcon className="w-4 h-4 text-gray-500" />
+                )}
+                <span className={`text-xs ${
+                  isLocationEnabled ? 'text-green-400' : 'text-gray-400'
+                }`}>
+                  {isLocationEnabled ? 'Location tracking active' : 'Location tracking off'}
+                </span>
+                
+                {/* Update indicator */}
+                {(isRefreshing || isTogglingLocation) && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-blue-400">
+                      {isTogglingLocation ? 'Updating...' : 'Refreshing...'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
+            
+            {/* Right side - Bolt Badge */}
+            <BoltBadge />
           </div>
         </div>
         
-        {/* Location Toggle and Refresh Controls */}
+        {/* Show Nearby Toggle and Refresh Controls */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between">
-            {/* Left side - Location Status */}
+            {/* Left side - Show Nearby Toggle */}
             <div className="flex items-center gap-2">
-              {isLocationEnabled ? (
-                <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse" />
-              ) : (
-                <MapPinIcon className="w-4 h-4 text-gray-500" />
-              )}
-              <span className={`text-xs ${
-                isLocationEnabled ? 'text-green-400' : 'text-gray-400'
-              }`}>
-                {isLocationEnabled ? 'Location tracking active' : 'Location tracking off'}
-              </span>
-              
-              {/* Update indicator */}
-              {(isRefreshing || isTogglingLocation) && (
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs text-blue-400">
-                    {isTogglingLocation ? 'Updating...' : 'Refreshing...'}
-                  </span>
-                </div>
-              )}
+              <span className="text-xs text-gray-400">Show Nearby</span>
+              <input
+                type="checkbox"
+                className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
+                checked={isLocationEnabled}
+                onChange={(e) => handleLocationToggle(e.target.checked)}
+                disabled={isTogglingLocation}
+              />
             </div>
             
-            {/* Right side - Location Toggle and Refresh */}
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Show Nearby</span>
-                <input
-                  type="checkbox"
-                  className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  checked={isLocationEnabled}
-                  onChange={(e) => handleLocationToggle(e.target.checked)}
-                  disabled={isTogglingLocation}
-                />
-              </div>
-              <button
-                onClick={handleRefresh}
-                disabled={!isLocationEnabled || isRefreshing}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                Refresh
-              </button>
-            </div>
+            {/* Right side - Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              disabled={!isLocationEnabled || isRefreshing}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              Refresh
+            </button>
           </div>
         </div>
       </div>
