@@ -7,6 +7,7 @@ import { uploadProfileImage, uploadBannerImage, deleteImage, extractFilePathFrom
 import { supabase } from '../lib/supabaseClient';
 import { transformProfileToUser } from '../../lib/utils';
 import { validateImageFile } from '../utils/imageUtils';
+import { BoltBadge } from '../components/common/BoltBadge';
 
 interface Props {
   user: User;
@@ -331,6 +332,8 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
 
   return (
     <div className="h-full bg-black overflow-y-auto">
+      <BoltBadge />
+      
       {/* Header */}
       <div className="sticky top-0 bg-black/90 backdrop-blur-sm border-b border-gray-800 px-4 py-3 flex items-center justify-between z-50">
         <button onClick={handleCancel} className="p-2 rounded-full hover:bg-gray-800">

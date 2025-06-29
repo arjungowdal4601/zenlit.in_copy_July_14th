@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { getAllPosts, getUserPosts } from '../lib/posts';
 import { getNearbyUsers } from '../lib/location';
 import { transformProfileToUser } from '../../lib/utils';
+import { BoltBadge } from '../components/common/BoltBadge';
 
 interface Props {
   userGender: 'male' | 'female';
@@ -221,22 +222,26 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   }
 
   return (
-    <div className="min-h-full bg-black">
+    <div className="h-full bg-black flex flex-col">
+      <BoltBadge />
+      
       {/* Header */}
-      <div className="bg-black border-b border-gray-800">
-        <div className="px-4 py-3 flex items-center">
-          <svg className="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          <div>
-            <h1 className="text-xl font-bold text-white">Nearby Feed</h1>
-            <p className="text-xs text-gray-400">Posts from people around you</p>
+      <div className="flex-shrink-0 bg-black border-b border-gray-800">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center">
+            <svg className="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <div>
+              <h1 className="text-xl font-bold text-white">Nearby Feed</h1>
+              <p className="text-xs text-gray-400">Posts from people around you</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Posts Feed - Only showing posts from nearby users */}
-      <div className="px-4 py-4 space-y-6 pb-20">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
         {posts.length > 0 ? (
           <PostsFeed posts={posts} onUserClick={handleUserClick} />
         ) : (

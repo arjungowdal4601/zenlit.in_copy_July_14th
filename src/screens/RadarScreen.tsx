@@ -15,6 +15,7 @@ import {
   isSecureContext
 } from '../lib/location';
 import { locationToggleManager } from '../lib/locationToggle';
+import { BoltBadge } from '../components/common/BoltBadge';
 
 interface Props {
   userGender: 'male' | 'female';
@@ -397,7 +398,10 @@ export const RadarScreen: React.FC<Props> = ({
         </button>
         {isLoadingProfile ? (
           <div className="min-h-full bg-black flex items-center justify-center">
-            ...loading spinner...
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading profile...</p>
+            </div>
           </div>
         ) : (
           <UserProfile
@@ -411,43 +415,49 @@ export const RadarScreen: React.FC<Props> = ({
   }
 
   return (
-    <div className="min-h-full bg-black">
+    <div className="h-full bg-black flex flex-col">
+      <BoltBadge />
+      
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800">
+      <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
-            {/* Left side - Title and Location Status */}
+            {/* Left side - Title */}
             <div className="flex-1">
               <h1 className="text-xl font-bold text-white">People Nearby</h1>
-              <div className="flex items-center gap-2 mt-1">
-                {/* Location status */}
+            </div>
+          </div>
+        </div>
+        
+        {/* Location Toggle and Refresh Controls */}
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between">
+            {/* Left side - Location Status */}
+            <div className="flex items-center gap-2">
+              {isLocationEnabled ? (
+                <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse" />
+              ) : (
+                <MapPinIcon className="w-4 h-4 text-gray-500" />
+              )}
+              <span className={`text-xs ${
+                isLocationEnabled ? 'text-green-400' : 'text-gray-400'
+              }`}>
+                {isLocationEnabled ? 'Location tracking active' : 'Location tracking off'}
+              </span>
+              
+              {/* Update indicator */}
+              {(isRefreshing || isTogglingLocation) && (
                 <div className="flex items-center gap-1">
-                  {isLocationEnabled ? (
-                    <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse" />
-                  ) : (
-                    <MapPinIcon className="w-4 h-4 text-gray-500" />
-                  )}
-                  <span className={`text-xs ${
-                    isLocationEnabled ? 'text-green-400' : 'text-gray-400'
-                  }`}>
-                    {isLocationEnabled ? 'Location tracking active' : 'Location tracking off'}
+                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-blue-400">
+                    {isTogglingLocation ? 'Updating...' : 'Refreshing...'}
                   </span>
                 </div>
-                
-                {/* Update indicator */}
-                {(isRefreshing || isTogglingLocation) && (
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs text-blue-400">
-                      {isTogglingLocation ? 'Updating...' : 'Refreshing...'}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
             
             {/* Right side - Location Toggle and Refresh */}
-            <div className="flex flex-col items-end gap-1 ml-4">
+            <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Show Nearby</span>
                 <input
@@ -473,14 +483,14 @@ export const RadarScreen: React.FC<Props> = ({
 
       {/* Location Status Info */}
       {!isLocationEnabled && (
-        <div className="px-4 py-3 bg-blue-900/20 border-b border-blue-700/30">
+        <div className="flex-shrink-0 px-4 py-3 bg-blue-900/20 border-b border-blue-700/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ExclamationTriangleIcon className="w-5 h-5 text-blue-500" />
               <div>
                 <span className="text-sm text-blue-400 font-medium">Location Tracking Off</span>
                 <p className="text-xs text-blue-300">
-                  Turn on -Show Nearby- to find people around you
+                  Turn on "Show Nearby" to find people around you
                 </p>
               </div>
             </div>
@@ -499,7 +509,7 @@ export const RadarScreen: React.FC<Props> = ({
 
       {/* Error Message */}
       {locationError && (
-        <div className="px-4 py-3 bg-red-900/20 border-b border-red-700/30">
+        <div className="flex-shrink-0 px-4 py-3 bg-red-900/20 border-b border-red-700/30">
           <div className="flex items-center gap-2">
             <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
             <span className="text-sm text-red-400">{locationError}</span>
@@ -508,7 +518,7 @@ export const RadarScreen: React.FC<Props> = ({
       )}
 
       {/* Users List */}
-      <div className="px-4 py-4 space-y-4 pb-20 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {isLocationEnabled ? (
           currentLocation ? (
             users.length > 0 ? (
@@ -555,7 +565,7 @@ export const RadarScreen: React.FC<Props> = ({
             </div>
             <p className="text-gray-400 mb-2">Location tracking is off</p>
             <p className="text-gray-500 text-sm mb-4">
-              Turn on -Show Nearby- to see people around you
+              Turn on "Show Nearby" to see people around you
             </p>
             <button
               onClick={() => handleLocationToggle(true)}
