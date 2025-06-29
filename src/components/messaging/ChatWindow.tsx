@@ -12,6 +12,7 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   currentUserId: string;
+  readOnly?: boolean;
   onBack?: () => void;
   onViewProfile?: (user: User) => void;
 }
@@ -21,6 +22,7 @@ export const ChatWindow = ({
   messages,
   onSendMessage,
   currentUserId,
+  readOnly = false,
   onBack,
   onViewProfile
 }: ChatWindowProps) => {
@@ -164,7 +166,11 @@ export const ChatWindow = ({
 
       {/* Message Input */}
       <div className="border-t border-gray-800 p-4">
-        <MessageInput onSendMessage={onSendMessage} />
+        {readOnly ? (
+          <p className="text-center text-sm text-gray-400">Messaging is read-only in demo mode.</p>
+        ) : (
+          <MessageInput onSendMessage={onSendMessage} />
+        )}
       </div>
     </div>
   );

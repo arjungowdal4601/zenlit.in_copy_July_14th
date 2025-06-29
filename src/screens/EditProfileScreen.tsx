@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabaseClient';
 import { transformProfileToUser } from '../../lib/utils';
 import { validateImageFile } from '../utils/imageUtils';
 import { BoltBadge } from '../components/common/BoltBadge';
+import { isDemoUser } from '../utils/demo';
 
 interface Props {
   user: User;
@@ -31,10 +32,17 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
   const [loading, setLoading] = useState<boolean>(false);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [hasChanges, setHasChanges] = useState<boolean>(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   const profileFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const socialAccountsSectionRef = useRef<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: auth } }) => {
+      setIsDemo(isDemoUser(auth));
+    });
+  }, []);
 
   console.log(`🔍 [EditProfileScreen] Component initialized with user:`, {
     id: user.id,
@@ -316,6 +324,14 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
   const handleCancel = () => {
     if (!hasChanges || confirm('Discard changes?')) onBack();
   };
+
+  if (isDemo) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center">
+        <p className="text-gray-400">Editing is disabled for demo accounts.</p>
+      </div>
+    );
+  }
 
   if (showSuccess) {
     return (

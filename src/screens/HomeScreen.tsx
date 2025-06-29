@@ -9,6 +9,8 @@ import { getAllPosts, getUserPosts } from '../lib/posts';
 import { getNearbyUsers } from '../lib/location';
 import { transformProfileToUser } from '../../lib/utils';
 import { BoltBadge } from '../components/common/BoltBadge';
+import { isDemoUser } from '../utils/demo';
+import { demoPosts, demoUser } from '../data/mockData';
 
 interface Props {
   userGender: 'male' | 'female';
@@ -23,6 +25,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
   const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUserProfile, setIsLoadingUserProfile] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   
   useEffect(() => {
     loadCurrentUserAndNearbyPosts();
@@ -32,9 +35,17 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
     try {
       // Get current user ID and location first
       const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      setIsDemo(isDemoUser(user));
       
       if (userError || !user) {
         console.error('Error getting current user:', userError);
+        setIsLoading(false);
+        return;
+      }
+
+      if (isDemoUser(user)) {
+        setPosts(demoPosts);
         setIsLoading(false);
         return;
       }
@@ -145,7 +156,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
       console.log('Transformed user:', transformedUser);
 
       // Load user's posts
-      const userPosts = await getUserPosts(userId);
+      const userPosts = transformedUser.isDemo ? demoPosts : await getUserPosts(userId);
       console.log('User posts loaded:', userPosts.length);
 
       setSelectedUser(transformedUser);

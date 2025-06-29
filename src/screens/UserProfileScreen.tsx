@@ -5,6 +5,7 @@ import { PostsGalleryScreen } from './PostsGalleryScreen';
 import { ChevronLeftIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { getUserPosts } from '../lib/posts';
 import { BoltBadge } from '../components/common/BoltBadge';
+import { demoPosts } from '../data/mockData';
 
 interface Props {
   user: User;
@@ -22,8 +23,12 @@ export const UserProfileScreen: React.FC<Props> = ({ user, onBack, onEditProfile
   useEffect(() => {
     const loadPosts = async () => {
       setIsLoading(true);
-      const loaded = await getUserPosts(user.id);
-      setPosts(loaded);
+      if (user.isDemo) {
+        setPosts(demoPosts);
+      } else {
+        const loaded = await getUserPosts(user.id);
+        setPosts(loaded);
+      }
       setIsLoading(false);
     };
     loadPosts();

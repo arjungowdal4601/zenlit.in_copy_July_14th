@@ -36,6 +36,9 @@ export const UserProfile: React.FC<Props> = ({ user, posts = [], onPostClick }) 
             size="lg"
           />
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
+          {user.isDemo && (
+            <span className="mt-1 text-xs text-blue-400">Demo Account</span>
+          )}
           {user.username && (
             <p className="text-gray-400 mt-1">@{user.username}</p>
           )}

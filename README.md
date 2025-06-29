@@ -79,6 +79,17 @@ npm run dev
 6. **Open your browser:**
    Navigate to `http://localhost:3000`
 
+## 🧪 Demo Account
+
+Use the read-only demo account to explore the app without creating data:
+
+```
+Email: demo@zenlit.in
+Password: zenlit123
+```
+
+Edits and posts are disabled for this account.
+
 ## 🏗 Project Structure
 
 ```

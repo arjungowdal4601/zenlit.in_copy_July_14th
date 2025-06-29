@@ -402,6 +402,12 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
               </form>
             )}
 
+            {currentView === 'login' && (
+              <div className="mt-4 text-center text-gray-400 text-sm">
+                Demo account: <span className="select-all">demo@zenlit.in</span> / <span className="select-all">zenlit123</span>
+              </div>
+            )}
+
             {/* SIGNUP FORMS */}
             {currentView === 'signup' && (
               <>

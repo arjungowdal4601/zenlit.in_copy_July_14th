@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { uploadPostImage } from '../lib/storage';
 import { generatePlaceholderImage, checkStorageAvailability } from '../lib/storage';
 import { createPost } from '../lib/posts';
+import { isDemoUser } from '../utils/demo';
 
 export const CreatePostScreen: React.FC = () => {
   const [caption, setCaption] = useState('');
@@ -15,6 +16,7 @@ export const CreatePostScreen: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [storageStatus, setStorageStatus] = useState<{
     available: boolean;
@@ -62,6 +64,8 @@ export const CreatePostScreen: React.FC = () => {
       }
 
       const { data: { user }, error } = await supabase.auth.getUser();
+
+      setIsDemo(isDemoUser(user));
       
       if (error || !user) {
         setIsLoading(false);
@@ -360,6 +364,14 @@ export const CreatePostScreen: React.FC = () => {
           <h2 className="text-xl font-bold text-white mb-2">Unable to Load Profile</h2>
           <p className="text-gray-400">Please try refreshing the page or logging in again.</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isDemo) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center">
+        <p className="text-gray-400">Posting is disabled for demo accounts.</p>
       </div>
     );
   }

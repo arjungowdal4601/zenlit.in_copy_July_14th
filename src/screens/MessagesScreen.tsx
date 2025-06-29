@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { sendMessage, getConversationsForUser, markMessagesAsRead } from '../lib/messages';
 import { getNearbyUsers } from '../lib/location';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { isDemoUser } from '../utils/demo';
+import { demoMessages, demoUser } from '../data/mockData';
 import { isValidUuid } from '../utils/uuid';
 
 interface Props {
@@ -33,6 +35,7 @@ export const MessagesScreen: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasUnread, setHasUnread] = useState(false);
   const [unreadByUser, setUnreadByUser] = useState<Record<string, boolean>>({});
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     onUnreadChange?.(hasUnread);
@@ -125,7 +128,15 @@ export const MessagesScreen: React.FC<Props> = ({
 
       if (!currentUser) return;
 
+      setIsDemo(isDemoUser(currentUser));
       setCurrentUserId(currentUser.id);
+
+      if (isDemoUser(currentUser)) {
+        setAllMessages(demoMessages);
+        setAllUsers([demoUser]);
+        setIsLoading(false);
+        return;
+      }
 
       // Load all conversations for the current user
       const conversations = await getConversationsForUser(currentUser.id);
@@ -240,6 +251,11 @@ export const MessagesScreen: React.FC<Props> = ({
     if (!selectedUser) return;
     if (!isValidUuid(currentUserId)) return;
 
+    if (isDemo) {
+      alert('Messaging is read-only in demo mode.');
+      return;
+    }
+
     const newMessage = await sendMessage(currentUserId, selectedUser.id, content);
     if (newMessage) {
       setAllMessages(prev => [...prev, newMessage]);
@@ -353,6 +369,7 @@ export const MessagesScreen: React.FC<Props> = ({
                 messages={selectedUserMessages}
                 onSendMessage={handleSendMessage}
                 currentUserId={currentUserId}
+                readOnly={isDemo}
                 onBack={handleBackToList}
                 onViewProfile={onViewProfile}
               />
@@ -421,6 +438,7 @@ export const MessagesScreen: React.FC<Props> = ({
                 messages={selectedUserMessages}
                 onSendMessage={handleSendMessage}
                 currentUserId={currentUserId}
+                readOnly={isDemo}
                 onBack={isMobile ? handleBackToList : undefined}
                 onViewProfile={onViewProfile}
               />

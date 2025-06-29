@@ -30,6 +30,7 @@ export function transformProfileToUser(profile: any): User {
     instagramUrl: profile.instagram_url,
     linkedInUrl: profile.linked_in_url,
     twitterUrl: profile.twitter_url,
+    isDemo: profile.is_demo,
   }
 }
 

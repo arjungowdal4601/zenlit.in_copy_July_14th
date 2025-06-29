@@ -23,6 +23,8 @@ export interface User {
   instagramUrl?: string;
   linkedInUrl?: string;
   twitterUrl?: string;
+  // Demo flag
+  isDemo?: boolean;
 }
 
 export interface Post {
