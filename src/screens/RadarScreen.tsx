@@ -417,15 +417,12 @@ export const RadarScreen: React.FC<Props> = ({
 
   return (
     <div className="h-full bg-black flex flex-col">
-      {/* Bolt.new Badge */}
-      <BoltBadge />
-
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-800 pt-20 pb-4">
-        <div className="px-4">
+      {/* Fixed Header with inline badge */}
+      <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-800">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Left side - Title and Location Status */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-white">People Nearby</h1>
               <div className="flex items-center gap-2 mt-1">
                 {/* Location status */}
@@ -453,11 +450,14 @@ export const RadarScreen: React.FC<Props> = ({
                 )}
               </div>
             </div>
+            
+            {/* Right side - Bolt Badge */}
+            <BoltBadge />
           </div>
         </div>
 
-        {/* Controls Section - moved below badge */}
-        <div className="px-4 mt-4">
+        {/* Controls Section - moved below header */}
+        <div className="px-4 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -470,15 +470,15 @@ export const RadarScreen: React.FC<Props> = ({
                   disabled={isTogglingLocation}
                 />
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={!isLocationEnabled || isRefreshing}
-                className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                Refresh
-              </button>
             </div>
+            <button
+              onClick={handleRefresh}
+              disabled={!isLocationEnabled || isRefreshing}
+              className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              Refresh
+            </button>
           </div>
         </div>
       </div>
