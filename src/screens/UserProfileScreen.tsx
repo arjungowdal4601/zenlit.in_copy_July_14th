@@ -41,79 +41,65 @@ export const UserProfileScreen: React.FC<Props> = ({ user, onBack, onEditProfile
   }
 
   return (
-    <div className="h-full bg-black flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm">
-        <div className="flex items-center gap-3 px-4 py-3">
-          {/* Left side - Badge and Settings */}
-          <div className="flex items-center gap-3">
-            <BoltBadge />
-            
-            {(onEditProfile || onLogout) && (
-              <div className="relative">
+    <div className="min-h-full bg-black">
+      <BoltBadge />
+      
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
+        >
+          <ChevronLeftIcon className="w-5 h-5 text-white" />
+        </button>
+      )}
+      
+      {(onEditProfile || onLogout) && (
+        <div className="fixed top-4 left-20 z-50">
+          <button
+            onClick={() => setShowMenu((m) => !m)}
+            className="p-3 bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-800 active:scale-95"
+          >
+            <Cog6ToothIcon className="w-5 h-5 text-white" />
+          </button>
+          {showMenu && (
+            <div className="mt-2 bg-gray-800 rounded-lg shadow-lg py-1">
+              {onEditProfile && (
                 <button
-                  onClick={() => setShowMenu((m) => !m)}
-                  className="p-2 rounded-full hover:bg-gray-800 active:scale-95 transition-all"
+                  onClick={() => {
+                    setShowMenu(false);
+                    onEditProfile();
+                  }}
+                  className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
                 >
-                  <Cog6ToothIcon className="w-5 h-5 text-white" />
+                  Edit Profile
                 </button>
-                {showMenu && (
-                  <div className="absolute top-full left-0 mt-2 bg-gray-800 rounded-lg shadow-lg py-1 z-10">
-                    {onEditProfile && (
-                      <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onEditProfile();
-                        }}
-                        className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
-                      >
-                        Edit Profile
-                      </button>
-                    )}
-                    {onLogout && (
-                      <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onLogout();
-                        }}
-                        className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
-                      >
-                        Logout
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          
-          <div className="flex-1" />
-          
-          {/* Right side - Back Button */}
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="p-2 rounded-full hover:bg-gray-800 active:scale-95 transition-all"
-            >
-              <ChevronLeftIcon className="w-5 h-5 text-white" />
-            </button>
+              )}
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onLogout();
+                  }}
+                  className="block px-4 py-2 text-sm text-white hover:bg-gray-700 w-full text-left"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
           )}
         </div>
-      </div>
+      )}
       
-      {/* Profile Content */}
-      <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-400">Loading profile...</p>
-            </div>
+      {isLoading ? (
+        <div className="min-h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-400">Loading profile...</p>
           </div>
-        ) : (
-          <UserProfile user={user} posts={posts} onPostClick={() => setShowGallery(true)} />
-        )}
-      </div>
+        </div>
+      ) : (
+        <UserProfile user={user} posts={posts} onPostClick={() => setShowGallery(true)} />
+      )}
     </div>
   );
 };
