@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
 import { ChevronLeftIcon, CameraIcon, CheckIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SocialAccountsSection } from '../components/social/SocialAccountsSection';
+import { BoltBadge } from '../components/common/BoltBadge';
 import { uploadProfileImage, uploadBannerImage, deleteImage, extractFilePathFromUrl } from '../lib/storage';
 import { supabase } from '../lib/supabaseClient';
 import { transformProfileToUser } from '../../lib/utils';
@@ -319,6 +320,7 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
   if (showSuccess) {
     return (
       <div className="h-full bg-black flex items-center justify-center">
+        <BoltBadge />
         <div className="text-center">
           <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <CheckIcon className="w-10 h-10 text-white" />
@@ -331,6 +333,9 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
 
   return (
     <div className="h-full bg-black overflow-y-auto">
+      {/* Bolt.new Badge */}
+      <BoltBadge />
+
       {/* Header */}
       <div className="sticky top-0 bg-black/90 backdrop-blur-sm border-b border-gray-800 px-4 py-3 flex items-center justify-between z-50">
         <button onClick={handleCancel} className="p-2 rounded-full hover:bg-gray-800">

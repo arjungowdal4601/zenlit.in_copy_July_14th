@@ -3,6 +3,7 @@ import { RadarUserCard } from '../components/radar/RadarUserCard';
 import { LocationPermissionModal } from '../components/radar/LocationPermissionModal';
 import { UserProfile } from '../components/profile/UserProfile';
 import { PostsGalleryScreen } from './PostsGalleryScreen';
+import { BoltBadge } from '../components/common/BoltBadge';
 import { User, UserLocation, LocationPermissionStatus, Post } from '../types';
 import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
@@ -389,6 +390,7 @@ export const RadarScreen: React.FC<Props> = ({
 
     return (
       <div className="min-h-full bg-black">
+        <BoltBadge />
         <button
           onClick={handleBackFromProfile}
           className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
@@ -397,7 +399,10 @@ export const RadarScreen: React.FC<Props> = ({
         </button>
         {isLoadingProfile ? (
           <div className="min-h-full bg-black flex items-center justify-center">
-            ...loading spinner...
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading profile...</p>
+            </div>
           </div>
         ) : (
           <UserProfile
@@ -412,8 +417,11 @@ export const RadarScreen: React.FC<Props> = ({
 
   return (
     <div className="min-h-full bg-black">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800">
+      {/* Bolt.new Badge */}
+      <BoltBadge />
+
+      {/* Header - moved down to accommodate badge */}
+      <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800" style={{ marginTop: '40px' }}>
         <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Left side - Title and Location Status */}
@@ -446,7 +454,7 @@ export const RadarScreen: React.FC<Props> = ({
               </div>
             </div>
             
-            {/* Right side - Location Toggle and Refresh */}
+            {/* Right side - Location Toggle and Refresh - moved down */}
             <div className="flex flex-col items-end gap-1 ml-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Show Nearby</span>
@@ -480,7 +488,7 @@ export const RadarScreen: React.FC<Props> = ({
               <div>
                 <span className="text-sm text-blue-400 font-medium">Location Tracking Off</span>
                 <p className="text-xs text-blue-300">
-                  Turn on -Show Nearby- to find people around you
+                  Turn on "Show Nearby" to find people around you
                 </p>
               </div>
             </div>
@@ -555,7 +563,7 @@ export const RadarScreen: React.FC<Props> = ({
             </div>
             <p className="text-gray-400 mb-2">Location tracking is off</p>
             <p className="text-gray-500 text-sm mb-4">
-              Turn on -Show Nearby- to see people around you
+              Turn on "Show Nearby" to see people around you
             </p>
             <button
               onClick={() => handleLocationToggle(true)}

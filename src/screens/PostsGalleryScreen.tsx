@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Post } from '../types';
 import { ChevronLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { BoltBadge } from '../components/common/BoltBadge';
 import { formatPostDate } from '../utils/dateUtils';
 import { deletePost } from '../lib/posts';
 import { supabase } from '../lib/supabase';
@@ -70,6 +71,9 @@ export const PostsGalleryScreen: React.FC<Props> = ({
 
   return (
     <div className="h-full bg-black overflow-y-auto">
+      {/* Bolt.new Badge */}
+      <BoltBadge />
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800">
         <div className="flex items-center px-4 py-3">

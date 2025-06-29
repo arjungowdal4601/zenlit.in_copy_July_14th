@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { CameraIcon, PhotoIcon, XMarkIcon, CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { BoltBadge } from '../components/common/BoltBadge';
 import { generateId } from '../utils/generateId';
 import { supabase } from '../lib/supabase';
 import { uploadPostImage } from '../lib/storage';
@@ -368,6 +369,7 @@ export const CreatePostScreen: React.FC = () => {
   if (showSuccess) {
     return (
       <div className="h-full bg-black flex items-center justify-center">
+        <BoltBadge />
         <div className="text-center">
           <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <CheckIcon className="w-10 h-10 text-white" />
@@ -383,6 +385,7 @@ export const CreatePostScreen: React.FC = () => {
   if (cameraError) {
     return (
       <div className="h-full bg-black flex items-center justify-center p-4">
+        <BoltBadge />
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <XMarkIcon className="w-8 h-8 text-white" />
@@ -415,6 +418,7 @@ export const CreatePostScreen: React.FC = () => {
   if (showCamera) {
     return (
       <div className="h-full bg-black flex flex-col">
+        <BoltBadge />
         {/* Camera Header */}
         <div className="flex items-center justify-between p-4 bg-black/80 backdrop-blur-sm">
           <button
@@ -463,6 +467,9 @@ export const CreatePostScreen: React.FC = () => {
 
   return (
     <div className="min-h-full bg-black">
+      {/* Bolt.new Badge */}
+      <BoltBadge />
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-gray-800">
         <div className="flex items-center justify-between px-4 py-3">

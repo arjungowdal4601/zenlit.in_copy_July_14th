@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { User, Post } from '../types';
 import { UserProfile } from '../components/profile/UserProfile';
 import { PostsGalleryScreen } from './PostsGalleryScreen';
+import { BoltBadge } from '../components/common/BoltBadge';
 import { ChevronLeftIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { getUserPosts } from '../lib/posts';
 
@@ -41,6 +42,9 @@ export const UserProfileScreen: React.FC<Props> = ({ user, onBack, onEditProfile
 
   return (
     <div className="min-h-full bg-black">
+      {/* Bolt.new Badge */}
+      <BoltBadge />
+
       {onBack && (
         <button
           onClick={onBack}
@@ -50,7 +54,7 @@ export const UserProfileScreen: React.FC<Props> = ({ user, onBack, onEditProfile
         </button>
       )}
       {(onEditProfile || onLogout) && (
-        <div className="fixed top-4 right-4 z-50">
+        <div className="fixed top-4 right-20 z-50">
           <button
             onClick={() => setShowMenu((m) => !m)}
             className="p-3 bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-800 active:scale-95"

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PostsFeed } from '../components/post/PostsFeed';
 import { UserProfile } from '../components/profile/UserProfile';
 import { PostsGalleryScreen } from './PostsGalleryScreen';
+import { BoltBadge } from '../components/common/BoltBadge';
 import { User, Post } from '../types';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
@@ -184,6 +185,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
 
     return (
       <div className="min-h-full bg-black">
+        <BoltBadge />
         <button
           onClick={handleBackFromProfile}
           className="fixed top-4 left-4 z-50 bg-gray-900/80 backdrop-blur-sm p-3 rounded-full shadow-lg active:scale-95 transition-transform"
@@ -222,6 +224,9 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
 
   return (
     <div className="min-h-full bg-black">
+      {/* Bolt.new Badge */}
+      <BoltBadge />
+
       {/* Header */}
       <div className="bg-black border-b border-gray-800">
         <div className="px-4 py-3 flex items-center">
