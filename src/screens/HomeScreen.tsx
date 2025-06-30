@@ -6,7 +6,8 @@ import { User, Post } from '../types';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
 import { getAllPosts, getUserPosts } from '../lib/posts';
-import { getNearbyUsers } from '../lib/location';
+import { getNearbyUsers, getDemoUsers } from '../lib/location';
+import { isDemoUser } from '../utils/demo';
 import { transformProfileToUser } from '../../lib/utils';
 import { BoltBadge } from '../components/common/BoltBadge';
 
@@ -41,6 +42,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
 
       setCurrentUserId(user.id);
       console.log('Current user ID:', user.id);
+      const isDemo = isDemoUser(user.email);
 
       // Get current user's profile to check location
       const { data: profile, error: profileError } = await supabase
@@ -84,10 +86,25 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
         return;
       }
 
-      const nearbyUsers = nearbyResult.users || [];
+      let nearbyUsers = nearbyResult.users || [];
       console.log('Found nearby users:', nearbyUsers.length);
 
-      if (nearbyUsers.length === 0) {
+      let demoUsers: any[] = [];
+      if (isDemo) {
+        const demoResult = await getDemoUsers(user.id, 50);
+        if (demoResult.success) {
+          demoUsers = demoResult.users || [];
+        } else {
+          console.error('Error getting demo users:', demoResult.error);
+        }
+      }
+
+      const combinedUsers = [...nearbyUsers, ...demoUsers];
+      const uniqueUsers = combinedUsers.filter((u, index, self) =>
+        index === self.findIndex(other => other.id === u.id)
+      );
+
+      if (uniqueUsers.length === 0) {
         console.log('No nearby users found - showing empty feed');
         setPosts([]);
         setIsLoading(false);
@@ -95,7 +112,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
       }
 
       // Get user IDs of nearby users
-      const nearbyUserIds = nearbyUsers.map(user => user.id);
+      const nearbyUserIds = uniqueUsers.map(user => user.id);
       console.log('Nearby user IDs:', nearbyUserIds);
 
       // Load all posts
