@@ -8,9 +8,9 @@ import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon, ChevronLeftIcon } f
 import { supabase } from '../lib/supabase';
 import { transformProfileToUser } from '../../lib/utils';
 import { getUserPosts } from '../lib/posts';
-import { 
-  getNearbyUsers, 
-  getUsersByExactCoordinates, // NEW: Import the new function
+import {
+  getNearbyUsers,
+  getDemoUsers,
   checkLocationPermission,
   isGeolocationSupported,
   isSecureContext
@@ -81,8 +81,8 @@ export const RadarScreen: React.FC<Props> = ({
         const [nearbyResult, demoUsersResult] = await Promise.all([
           // Get users in the same location bucket as the demo user
           getNearbyUsers(currentUserId, location, 20),
-          // Get users with exact coordinates 99, 99
-          getUsersByExactCoordinates(currentUserId, 99, 99, 20)
+          // Get other demo accounts with fixed coordinates
+          getDemoUsers(currentUserId, 20)
         ]);
 
         console.log('🔄 DEMO DEBUG: Nearby users result:', nearbyResult);
