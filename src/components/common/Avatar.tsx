@@ -22,7 +22,7 @@ export const Avatar: React.FC<Props> = ({
   return (
     <div className="relative inline-block">
       <img
-        src={src}
+        src={src || undefined}
         alt={alt}
         className={`
           ${sizeClasses[size]}
