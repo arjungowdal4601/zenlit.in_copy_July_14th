@@ -321,6 +321,14 @@ export const getUsersByExactCoordinates = async (
   }
 };
 
+// Convenience wrapper specifically for demo accounts at coordinates 99, 99
+export const getDemoUsers = async (
+  currentUserId: string,
+  limit: number = 20
+): Promise<{ success: boolean; users?: any[]; error?: string }> => {
+  return getUsersByExactCoordinates(currentUserId, 99, 99, limit);
+};
+
 // Get nearby users using database RPC function for exact coordinate matching
 export const getNearbyUsers = async (
   currentUserId: string,
