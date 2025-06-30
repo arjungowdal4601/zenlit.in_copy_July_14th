@@ -61,8 +61,9 @@ export const RadarScreen: React.FC<Props> = ({
 
   // Load users with exact coordinate match - MODIFIED for demo users
   const loadNearbyUsers = useCallback(async (currentUserId: string, location: UserLocation) => {
+    // For demo users, always load users regardless of toggle state
+    // For regular users, respect the toggle state
     if (!isLocationEnabled && !isDemo) {
-      // Don't load users if toggle is OFF (unless it's a demo user)
       setUsers([]);
       return;
     }
@@ -205,23 +206,39 @@ export const RadarScreen: React.FC<Props> = ({
         hasCurrentLocation: !!toggleState.currentLocation
       });
 
-      // For demo users, always load users regardless of toggle state
+      // For demo users, load users if toggle is enabled OR use default demo location
       if (isDemo) {
-        console.log('🚀 RADAR DEBUG: Demo user - loading users regardless of toggle state');
+        console.log('🚀 RADAR DEBUG: Demo user - checking toggle state');
         
-        // Use current user's location or default demo location
-        const demoLocation: UserLocation = {
-          latitude: currentUser.latitude || 99,
-          longitude: currentUser.longitude || 99,
-          timestamp: Date.now()
-        };
-        
-        setCurrentLocation(demoLocation);
-        await loadNearbyUsers(currentUser.id, demoLocation);
-        setLocationPermission({ granted: true, denied: false, pending: false });
+        if (toggleState.isEnabled && toggleState.currentLocation) {
+          // Use the toggle manager's location
+          setCurrentLocation(toggleState.currentLocation);
+          await loadNearbyUsers(currentUser.id, toggleState.currentLocation);
+        } else if (currentUser.latitude && currentUser.longitude) {
+          // Use current user's location but don't load users if toggle is OFF
+          const userLocation: UserLocation = {
+            latitude: currentUser.latitude,
+            longitude: currentUser.longitude,
+            timestamp: Date.now()
+          };
+          setCurrentLocation(userLocation);
+          setLocationPermission({ granted: true, denied: false, pending: false });
+          
+          // Only load users if toggle is ON
+          if (toggleState.isEnabled) {
+            await loadNearbyUsers(currentUser.id, userLocation);
+          } else {
+            setUsers([]);
+          }
+        } else {
+          // No location data, check permissions
+          const permissionStatus = await checkLocationPermission();
+          setLocationPermission(permissionStatus);
+          setUsers([]);
+        }
         
       } else {
-        // Regular user logic
+        // Regular user logic (unchanged)
         if (toggleState.isEnabled && toggleState.currentLocation) {
           setCurrentLocation(toggleState.currentLocation);
           await loadNearbyUsers(currentUser.id, toggleState.currentLocation);
@@ -272,17 +289,17 @@ export const RadarScreen: React.FC<Props> = ({
     console.log('📍 RADAR: Location update received:', location);
     setCurrentLocation(location);
     
-    if (location && currentUser && (isLocationEnabled || isDemo)) {
+    if (location && currentUser && isLocationEnabled) {
       if (isDemo) {
         await syncDemoLocations(location);
       }
-      // Load nearby users if toggle is ON or if it's a demo user
+      // Load nearby users only if toggle is ON
       await loadNearbyUsers(currentUser.id, location);
-    } else if (!isDemo) {
-      // Clear users if location is null or toggle is OFF (but not for demo users)
+    } else {
+      // Clear users if location is null or toggle is OFF
       setUsers([]);
     }
-  }, [currentUser, isLocationEnabled, isDemo, loadNearbyUsers, syncDemoLocations]);
+  }, [currentUser, isLocationEnabled, loadNearbyUsers, syncDemoLocations, isDemo]);
 
   // Handle location errors from toggle manager
   const handleLocationError = useCallback((error: string) => {
@@ -337,9 +354,7 @@ export const RadarScreen: React.FC<Props> = ({
         if (result.success) {
           setIsLocationEnabled(false);
           setCurrentLocation(null);
-          if (!isDemo) {
-            setUsers([]); // Clear users immediately (but not for demo users)
-          }
+          setUsers([]); // Clear users immediately for both demo and regular users
           console.log('✅ Location toggle turned OFF successfully');
         } else {
           console.error('❌ Failed to turn OFF location toggle:', result.error);
@@ -435,7 +450,7 @@ export const RadarScreen: React.FC<Props> = ({
   // Pull to refresh handler
   const handleRefresh = async () => {
     if (isRefreshing || !currentUser) return;
-    if (!isDemo && !isLocationEnabled) return;
+    if (!isLocationEnabled) return; // Respect toggle state for both demo and regular users
     
     setIsRefreshing(true);
     setLocationError(null);
@@ -535,16 +550,18 @@ export const RadarScreen: React.FC<Props> = ({
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold text-white">People Nearby</h1>
               <div className="flex items-center gap-2">
-                {(isLocationEnabled || isDemo) ? (
+                {isLocationEnabled ? (
                   <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse" />
                 ) : (
                   <MapPinIcon className="w-4 h-4 text-gray-500" />
                 )}
                 <span className={`text-xs ${
-                  (isLocationEnabled || isDemo) ? 'text-green-400' : 'text-gray-400'
+                  isLocationEnabled ? 'text-green-400' : 'text-gray-400'
                 }`}>
-                  {isDemo ? 'Demo mode active' : 
-                   isLocationEnabled ? 'Location tracking active' : 'Location tracking off'}
+                  {isDemo ? 
+                    (isLocationEnabled ? 'Demo mode + location active' : 'Demo mode - location off') :
+                    (isLocationEnabled ? 'Location tracking active' : 'Location tracking off')
+                  }
                 </span>
                 
                 {/* Update indicator */}
@@ -564,57 +581,39 @@ export const RadarScreen: React.FC<Props> = ({
           </div>
         </div>
         
-        {/* Show Nearby Toggle and Refresh Controls - Hide for demo users */}
-        {!isDemo && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Show Nearby</span>
-                <input
-                  type="checkbox"
-                  className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  checked={isLocationEnabled}
-                  onChange={(e) => handleLocationToggle(e.target.checked)}
-                  disabled={isTogglingLocation}
-                />
-              </div>
-
-              <button
-                onClick={handleRefresh}
-                disabled={!isLocationEnabled || isRefreshing}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                Refresh
-              </button>
+        {/* Show Nearby Toggle and Refresh Controls - Now shown for ALL users */}
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Show Nearby</span>
+              <input
+                type="checkbox"
+                className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
+                checked={isLocationEnabled}
+                onChange={(e) => handleLocationToggle(e.target.checked)}
+                disabled={isTogglingLocation}
+              />
+              {isDemo && (
+                <span className="text-xs text-blue-400 ml-2">
+                  (Demo users + nearby people)
+                </span>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* Demo user info */}
-        {isDemo && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-blue-400">Demo Mode</span>
-                <span className="text-xs text-gray-400">Showing all nearby users + demo users</span>
-              </div>
-
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                Refresh
-              </button>
-            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={!isLocationEnabled || isRefreshing}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              Refresh
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Location Status Info - Hide for demo users */}
-      {!isDemo && !isLocationEnabled && (
+      {/* Location Status Info */}
+      {!isLocationEnabled && (
         <div className="flex-shrink-0 px-4 py-3 bg-blue-900/20 border-b border-blue-700/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -622,7 +621,10 @@ export const RadarScreen: React.FC<Props> = ({
               <div>
                 <span className="text-sm text-blue-400 font-medium">Location Tracking Off</span>
                 <p className="text-xs text-blue-300">
-                  Turn on "Show Nearby" to find people around you
+                  {isDemo ? 
+                    "Turn on to see demo users and nearby people" :
+                    "Turn on \"Show Nearby\" to find people around you"
+                  }
                 </p>
               </div>
             </div>
@@ -639,8 +641,8 @@ export const RadarScreen: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Error Message - Hide for demo users */}
-      {!isDemo && locationError && (
+      {/* Error Message */}
+      {locationError && (
         <div className="flex-shrink-0 px-4 py-3 bg-red-900/20 border-b border-red-700/30">
           <div className="flex items-center gap-2">
             <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
@@ -668,7 +670,7 @@ export const RadarScreen: React.FC<Props> = ({
             <p className="text-gray-400 mb-2">No one nearby right now</p>
             <p className="text-gray-500 text-sm">
               {isDemo ? 
-                "Demo users and nearby people will appear here!" :
+                "Turn on location to see demo users and nearby people!" :
                 !isLocationEnabled ? 
                   "Turn on location tracking to see people around you!" :
                   "Move around or check back later to find people nearby!"
@@ -678,16 +680,14 @@ export const RadarScreen: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Location Permission Modal - Hide for demo users */}
-      {!isDemo && (
-        <LocationPermissionModal
-          isOpen={showLocationModal}
-          onClose={() => setShowLocationModal(false)}
-          onRequestLocation={handleRequestLocation}
-          isRequesting={isRequestingLocation}
-          error={locationError || undefined}
-        />
-      )}
+      {/* Location Permission Modal */}
+      <LocationPermissionModal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onRequestLocation={handleRequestLocation}
+        isRequesting={isRequestingLocation}
+        error={locationError || undefined}
+      />
     </div>
   );
 };
