@@ -7,7 +7,6 @@ import { sendMessage, getConversationsForUser, markMessagesAsRead } from '../lib
 import { getNearbyUsers, getDemoUsers } from '../lib/location';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { isValidUuid } from '../utils/uuid';
-import { isDemoUser } from '../utils/demo';
 
 interface Props {
   selectedUser?: User | null;
@@ -128,7 +127,6 @@ export const MessagesScreen: React.FC<Props> = ({
 
       setCurrentUserId(currentUser.id);
 
-      const isDemo = isDemoUser(currentUser.email);
 
       // Load all conversations for the current user
       const conversations = await getConversationsForUser(currentUser.id);
@@ -169,15 +167,17 @@ export const MessagesScreen: React.FC<Props> = ({
         }
       }
 
-      if (isDemo) {
-        const demoResult = await getDemoUsers(currentUser.id, limit);
-        if (demoResult.success && demoResult.users) {
-          demoProfiles = demoResult.users;
-          nearIds = Array.from(new Set([...nearIds, ...demoProfiles.map((u: any) => u.id)]));
-          nearbyProfiles = [...nearbyProfiles, ...demoProfiles];
-          nearbyProfiles = nearbyProfiles.filter((p, index, self) => index === self.findIndex(q => q.id === p.id));
-        }
+      const demoResult = await getDemoUsers(currentUser.id, limit);
+      if (demoResult.success && demoResult.users) {
+        demoProfiles = demoResult.users;
       }
+
+      const combinedProfiles = [...nearbyProfiles, ...demoProfiles];
+      const uniqueProfiles = combinedProfiles.filter(
+        (p, index, self) => index === self.findIndex(q => q.id === p.id)
+      );
+      nearbyProfiles = uniqueProfiles;
+      nearIds = uniqueProfiles.map((u: any) => u.id);
 
       // Load profiles for conversation partners not already in nearby list
       const idsToFetch = partnerIds.filter(id => !nearIds.includes(id));
