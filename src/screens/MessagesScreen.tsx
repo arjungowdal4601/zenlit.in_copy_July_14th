@@ -4,9 +4,10 @@ import { ChatWindow } from '../components/messaging/ChatWindow';
 import { User, Message } from '../types';
 import { supabase } from '../lib/supabase';
 import { sendMessage, getConversationsForUser, markMessagesAsRead } from '../lib/messages';
-import { getNearbyUsers } from '../lib/location';
+import { getNearbyUsers, getDemoUsers } from '../lib/location';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { isValidUuid } from '../utils/uuid';
+import { isDemoUser } from '../utils/demo';
 
 interface Props {
   selectedUser?: User | null;
@@ -127,6 +128,8 @@ export const MessagesScreen: React.FC<Props> = ({
 
       setCurrentUserId(currentUser.id);
 
+      const isDemo = isDemoUser(currentUser.email);
+
       // Load all conversations for the current user
       const conversations = await getConversationsForUser(currentUser.id);
       setAllMessages(conversations);
@@ -149,17 +152,30 @@ export const MessagesScreen: React.FC<Props> = ({
 
       let nearbyProfiles: any[] = [];
       let nearIds: string[] = [];
+      let demoProfiles: any[] = [];
+
+      const limit = 20;
 
       if (myProfile?.latitude && myProfile?.longitude) {
         const result = await getNearbyUsers(currentUser.id, {
           latitude: myProfile.latitude,
           longitude: myProfile.longitude,
           timestamp: Date.now()
-        });
+        }, limit);
 
         if (result.success && result.users) {
           nearbyProfiles = result.users;
           nearIds = result.users.map((u: any) => u.id);
+        }
+      }
+
+      if (isDemo) {
+        const demoResult = await getDemoUsers(currentUser.id, limit);
+        if (demoResult.success && demoResult.users) {
+          demoProfiles = demoResult.users;
+          nearIds = Array.from(new Set([...nearIds, ...demoProfiles.map((u: any) => u.id)]));
+          nearbyProfiles = [...nearbyProfiles, ...demoProfiles];
+          nearbyProfiles = nearbyProfiles.filter((p, index, self) => index === self.findIndex(q => q.id === p.id));
         }
       }
 
