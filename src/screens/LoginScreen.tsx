@@ -47,6 +47,15 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     if (error) setError(null);
   };
 
+  // Helper function to fill demo credentials
+  const fillDemoCredentials = () => {
+    setFormData(prev => ({
+      ...prev,
+      email: 'demo@zenlit.in',
+      password: 'zenlit123'
+    }));
+  };
+
   // LOGIN FLOW: Existing users with email/password
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,6 +408,37 @@ export const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                     'Sign In'
                   )}
                 </button>
+
+                {/* Demo Credentials Section */}
+                <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-blue-300 mb-2">Try Demo Account</h3>
+                      <div className="space-y-2 text-xs text-blue-200">
+                        <div className="flex items-center justify-between">
+                          <span>Email:</span>
+                          <code className="bg-blue-800/30 px-2 py-1 rounded text-blue-100">demo@zenlit.in</code>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Password:</span>
+                          <code className="bg-blue-800/30 px-2 py-1 rounded text-blue-100">zenlit123</code>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={fillDemoCredentials}
+                        className="mt-3 w-full bg-blue-600/30 text-blue-300 py-2 px-3 rounded text-xs hover:bg-blue-600/40 transition-colors"
+                      >
+                        Fill Demo Credentials
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </form>
             )}
 
