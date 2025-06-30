@@ -32,6 +32,9 @@ export const ChatList = ({
   const [nearbyContacts, setNearbyContacts] = useState<Contact[]>([]);
   const [historyOnlyContacts, setHistoryOnlyContacts] = useState<Contact[]>([]);
 
+  const showAnonymousHint =
+    historyOnlyContacts.length > 0 || users.some((u) => u.name === 'Anonymous');
+
   useEffect(() => {
     if (!users || users.length === 0) {
       setNearbyContacts([]);
@@ -87,6 +90,11 @@ export const ChatList = ({
     <div className="flex flex-col h-full bg-black">
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
+        {showAnonymousHint && (
+          <p className="text-xs text-gray-500 px-4 pb-2">
+            People outside your radar appear as <span className="font-semibold">Anonymous</span> until they come nearby.
+          </p>
+        )}
         {nearbyContacts.map((user) => {
           const latestMessage = getLatestMessage(user.id);
 
