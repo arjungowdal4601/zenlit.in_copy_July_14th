@@ -10,7 +10,7 @@ import { getNearbyUsers } from '../lib/location';
 import { transformProfileToUser } from '../../lib/utils';
 import { BoltBadge } from '../components/common/BoltBadge';
 import { isDemoUser } from '../utils/demo';
-import { demoPosts, demoUser } from '../data/mockData';
+import { demoPosts } from '../data/mockData';
 
 interface Props {
   userGender: 'male' | 'female';
@@ -36,7 +36,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
       // Get current user ID and location first
       const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-      setIsDemo(isDemoUser(user));
+      setIsDemo(isDemoUser(user?.email));
       
       if (userError || !user) {
         console.error('Error getting current user:', userError);
@@ -44,7 +44,7 @@ export const HomeScreen: React.FC<Props> = ({ userGender }) => {
         return;
       }
 
-      if (isDemoUser(user)) {
+      if (isDemoUser(user?.email)) {
         setPosts(demoPosts);
         setIsLoading(false);
         return;

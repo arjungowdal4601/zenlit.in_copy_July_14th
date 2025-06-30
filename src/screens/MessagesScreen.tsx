@@ -128,10 +128,10 @@ export const MessagesScreen: React.FC<Props> = ({
 
       if (!currentUser) return;
 
-      setIsDemo(isDemoUser(currentUser));
+      setIsDemo(isDemoUser(currentUser.email));
       setCurrentUserId(currentUser.id);
 
-      if (isDemoUser(currentUser)) {
+      if (isDemoUser(currentUser.email)) {
         setAllMessages(demoMessages);
         setAllUsers([demoUser]);
         setIsLoading(false);

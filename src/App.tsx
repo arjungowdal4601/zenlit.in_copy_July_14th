@@ -248,7 +248,7 @@ export default function App() {
           }
         }
 
-        const isDemo = isDemoUser(user);
+        const isDemo = isDemoUser(user.email);
         const { error } = await supabase.auth.signOut();
         if (error) {
           console.error('Logout error:', error);
@@ -276,6 +276,10 @@ export default function App() {
   };
 
   const handleEditProfile = () => {
+    if (currentUser && isDemoUser(currentUser.email)) {
+      alert('Edit profile not allowed in testing bot accounts.');
+      return;
+    }
     setIsEditingProfile(true);
   };
 

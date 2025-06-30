@@ -40,7 +40,7 @@ export const EditProfileScreen: React.FC<Props> = ({ user, onBack, onSave, initi
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: auth } }) => {
-      setIsDemo(isDemoUser(auth));
+      setIsDemo(isDemoUser(auth?.email));
     });
   }, []);
 

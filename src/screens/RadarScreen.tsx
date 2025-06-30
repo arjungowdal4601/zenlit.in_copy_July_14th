@@ -8,7 +8,7 @@ import { MapPinIcon, ExclamationTriangleIcon, ArrowPathIcon, ChevronLeftIcon } f
 import { supabase } from '../lib/supabase';
 import { transformProfileToUser } from '../../lib/utils';
 import { getUserPosts } from '../lib/posts';
-import { demoPosts, demoUser } from '../data/mockData';
+import { isDemoUser, DEMO_VISIBLE_USER_IDS } from '../utils/demo';
 import { 
   getNearbyUsers, 
   checkLocationPermission,
@@ -39,7 +39,7 @@ export const RadarScreen: React.FC<Props> = ({
   });
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
-  const isDemo = currentUser?.isDemo;
+  const isDemo = isDemoUser(currentUser?.email);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -56,12 +56,24 @@ export const RadarScreen: React.FC<Props> = ({
   // Refs for cleanup
   const mountedRef = useRef(true);
 
-  // Load users with exact coordinate match
-  const loadNearbyUsers = useCallback(async (currentUserId: string, location: UserLocation) => {
-    if (isDemo) {
-      setUsers([demoUser]);
+  const loadDemoUsers = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', DEMO_VISIBLE_USER_IDS);
+
+    if (error) {
+      console.error('Failed to load demo users:', error);
+      setUsers([]);
       return;
     }
+
+    const transformed = (data || []).map(transformProfileToUser);
+    setUsers(transformed);
+  }, []);
+
+  // Load users with exact coordinate match
+  const loadNearbyUsers = useCallback(async (currentUserId: string, location: UserLocation) => {
     if (!isLocationEnabled) {
       // Don't load users if toggle is OFF
       setUsers([]);
@@ -114,8 +126,9 @@ export const RadarScreen: React.FC<Props> = ({
       console.log('🚀 RADAR DEBUG: Initializing radar screen');
 
       if (isDemo) {
-        setUsers([demoUser]);
-        setCurrentLocation({ latitude: demoUser.latitude!, longitude: demoUser.longitude!, timestamp: Date.now() });
+        setIsLocationEnabled(false);
+        await loadDemoUsers();
+        setCurrentLocation(null);
         setIsLoading(false);
         return;
       }
@@ -297,7 +310,7 @@ export const RadarScreen: React.FC<Props> = ({
       console.log('Transformed user:', transformedUser);
 
       // Load user's posts
-      const userPosts = user.isDemo ? demoPosts : await getUserPosts(user.id);
+      const userPosts = await getUserPosts(user.id);
       console.log('User posts loaded:', userPosts.length);
 
       setSelectedProfileUser(transformedUser);
@@ -351,7 +364,16 @@ export const RadarScreen: React.FC<Props> = ({
 
   // Pull to refresh handler
   const handleRefresh = async () => {
-    if (isRefreshing || !currentUser || !isLocationEnabled) return;
+    if (isRefreshing || !currentUser) return;
+
+    if (isDemo) {
+      setIsRefreshing(true);
+      await loadDemoUsers();
+      setIsRefreshing(false);
+      return;
+    }
+
+    if (!isLocationEnabled) return;
     
     setIsRefreshing(true);
     setLocationError(null);

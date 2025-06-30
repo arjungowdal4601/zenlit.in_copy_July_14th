@@ -65,7 +65,7 @@ export const CreatePostScreen: React.FC = () => {
 
       const { data: { user }, error } = await supabase.auth.getUser();
 
-      setIsDemo(isDemoUser(user));
+      setIsDemo(isDemoUser(user?.email));
       
       if (error || !user) {
         setIsLoading(false);
