@@ -231,6 +231,13 @@ export const RadarScreen: React.FC<Props> = ({
 
   // Handle location toggle change
   const handleLocationToggle = async (enabled: boolean) => {
+    // Prevent toggle if user is not initialized
+    if (!currentUser || !currentUser.id) {
+      console.error('Cannot toggle location: User not initialized');
+      setLocationError('User not initialized. Please try again.');
+      return;
+    }
+
     if (isTogglingLocation) return;
 
     setIsTogglingLocation(true);
@@ -498,7 +505,7 @@ export const RadarScreen: React.FC<Props> = ({
                 className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
                 checked={isLocationEnabled}
                 onChange={(e) => handleLocationToggle(e.target.checked)}
-                disabled={isTogglingLocation}
+                disabled={isTogglingLocation || !currentUser || !currentUser.id}
               />
             </div>
             
@@ -524,14 +531,14 @@ export const RadarScreen: React.FC<Props> = ({
               <div>
                 <span className="text-sm text-blue-400 font-medium">Location Tracking Off</span>
                 <p className="text-xs text-blue-300">
-                  Turn on &quot;Show Nearby&quot; to find people around you
+                  Turn on "Show Nearby" to find people around you
                 </p>
               </div>
             </div>
             {isGeolocationSupported() && isSecureContext() && (
               <button
                 onClick={() => handleLocationToggle(true)}
-                disabled={isTogglingLocation}
+                disabled={isTogglingLocation || !currentUser || !currentUser.id}
                 className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {isTogglingLocation ? 'Enabling...' : 'Enable'}
@@ -599,11 +606,11 @@ export const RadarScreen: React.FC<Props> = ({
             </div>
             <p className="text-gray-400 mb-2">Location tracking is off</p>
             <p className="text-gray-500 text-sm mb-4">
-              Turn on &quot;Show Nearby&quot; to see people around you
+              Turn on "Show Nearby" to see people around you
             </p>
             <button
               onClick={() => handleLocationToggle(true)}
-              disabled={isTogglingLocation}
+              disabled={isTogglingLocation || !currentUser || !currentUser.id}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
             >
               {isTogglingLocation ? 'Enabling...' : 'Turn On Location'}
