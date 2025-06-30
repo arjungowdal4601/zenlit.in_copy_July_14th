@@ -107,28 +107,28 @@ export const RadarScreen: React.FC<Props> = ({
     }
   }, [isLocationEnabled]);
 
-  // Load all profiles for the demo user
-  const fetchDemoUsers = useCallback(async (currentUserId: string) => {
-    try {
-      setIsRefreshing(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', currentUserId);
-      if (error || !data) {
-        console.error('Error loading demo users:', error);
-        setUsers([]);
-        return;
+  // Sync the location for all demo accounts to the current demo user's location
+  const syncDemoLocations = useCallback(
+    async (location: UserLocation) => {
+      if (!isDemo || !currentUser) return;
+
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            latitude: location.latitude,
+            longitude: location.longitude,
+            location_last_updated_at: new Date().toISOString()
+          })
+          .like('username', 'demo%')
+          .neq('id', currentUser.id);
+      } catch (error) {
+        console.error('Error syncing demo locations:', error);
       }
-      const transformedUsers: User[] = data.map(profile => transformProfileToUser(profile));
-      setUsers(transformedUsers);
-    } catch (error) {
-      console.error('Error loading demo users:', error);
-      setUsers([]);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+    },
+    [isDemo, currentUser]
+  );
+
 
   const initializeRadar = useCallback(async () => {
     try {
@@ -142,12 +142,12 @@ export const RadarScreen: React.FC<Props> = ({
 
       console.log('🚀 RADAR DEBUG: Current user found:', currentUser.id);
 
-      if (isDemo) {
-        await fetchDemoUsers(currentUser.id);
-        setIsLocationEnabled(false);
-        setCurrentLocation(null);
-        setLocationPermission({ granted: false, denied: false, pending: false });
-        return;
+      if (isDemo && currentUser.latitude && currentUser.longitude) {
+        await syncDemoLocations({
+          latitude: currentUser.latitude,
+          longitude: currentUser.longitude,
+          timestamp: Date.now()
+        });
       }
 
       // Initialize location toggle manager with current user
@@ -196,7 +196,8 @@ export const RadarScreen: React.FC<Props> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, loadNearbyUsers, fetchDemoUsers, isDemo]);
+  }, [currentUser, loadNearbyUsers, syncDemoLocations, isDemo]);
+
 
   useEffect(() => {
     mountedRef.current = true;
@@ -217,13 +218,16 @@ export const RadarScreen: React.FC<Props> = ({
     setCurrentLocation(location);
     
     if (location && currentUser && isLocationEnabled) {
+      if (isDemo) {
+        await syncDemoLocations(location);
+      }
       // Load nearby users only if toggle is ON
       await loadNearbyUsers(currentUser.id, location);
     } else {
       // Clear users if location is null or toggle is OFF
       setUsers([]);
     }
-  }, [currentUser, isLocationEnabled, loadNearbyUsers]);
+  }, [currentUser, isLocationEnabled, loadNearbyUsers, syncDemoLocations, isDemo]);
 
   // Handle location errors from toggle manager
   const handleLocationError = useCallback((error: string) => {
@@ -380,8 +384,18 @@ export const RadarScreen: React.FC<Props> = ({
     setLocationError(null);
     
     try {
-      if (isDemo) {
-        await fetchDemoUsers(currentUser.id);
+      // Refresh location if toggle is ON
+      const result = await locationToggleManager.refreshLocation();
+
+      if (result.success) {
+        const state = locationToggleManager.getState();
+        if (state.currentLocation && currentUser) {
+          if (isDemo) {
+            await syncDemoLocations(state.currentLocation);
+          }
+          await loadNearbyUsers(currentUser.id, state.currentLocation);
+          setCurrentLocation(state.currentLocation);
+        }
       } else {
         // Refresh location if toggle is ON
         const result = await locationToggleManager.refreshLocation();
@@ -495,18 +509,16 @@ export const RadarScreen: React.FC<Props> = ({
         {/* Show Nearby Toggle and Refresh Controls */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between">
-            {!isDemo && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Show Nearby</span>
-                <input
-                  type="checkbox"
-                  className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  checked={isLocationEnabled}
-                  onChange={(e) => handleLocationToggle(e.target.checked)}
-                  disabled={isTogglingLocation}
-                />
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Show Nearby</span>
+              <input
+                type="checkbox"
+                className="relative w-10 h-5 rounded-full appearance-none bg-gray-700 checked:bg-blue-600 transition-colors cursor-pointer before:absolute before:left-1 before:top-1 before:w-3 before:h-3 before:bg-white before:rounded-full before:transition-transform checked:before:translate-x-5 disabled:opacity-50 disabled:cursor-not-allowed"
+                checked={isLocationEnabled}
+                onChange={(e) => handleLocationToggle(e.target.checked)}
+                disabled={isTogglingLocation}
+              />
+            </div>
 
             <button
               onClick={handleRefresh}
