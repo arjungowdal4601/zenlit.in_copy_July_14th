@@ -253,6 +253,74 @@ interface DatabaseUser {
   distance_km: number;
 }
 
+// NEW: Get users by exact coordinates (for demo users)
+export const getUsersByExactCoordinates = async (
+  currentUserId: string,
+  latitude: number,
+  longitude: number,
+  limit: number = 20
+): Promise<{
+  success: boolean;
+  users?: any[];
+  error?: string;
+}> => {
+  try {
+    console.log('🔍 DEMO DEBUG: Getting users by exact coordinates');
+    console.log('📍 Target coordinates:', { latitude, longitude });
+    console.log('📍 Current user ID:', currentUserId);
+    console.log('📍 Limit:', limit);
+
+    // Query users with exact coordinates
+    const { data: users, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('latitude', latitude)
+      .eq('longitude', longitude)
+      .neq('id', currentUserId)
+      .not('name', 'is', null)
+      .limit(limit);
+
+    if (error) {
+      console.error('🔍 DEMO DEBUG: Error fetching users by exact coordinates:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
+    console.log('🔍 DEMO DEBUG: Found users with exact coordinates:', users?.length || 0);
+
+    // Process users - add distance_km field
+    const usersWithDistance = (users || []).map((user: any, index: number) => {
+      console.log(`🔍 DEMO DEBUG: Processing user ${index + 1}/${users?.length || 0}`);
+      console.log('👤 User ID:', user.id);
+      console.log('👤 User name:', user.name);
+      console.log('👤 User coordinates:', { latitude: user.latitude, longitude: user.longitude });
+
+      return {
+        ...user,
+        distance_km: 0, // Demo users at exact coordinates have distance 0
+        hasRealLocation: true
+      };
+    });
+
+    console.log('🔍 DEMO DEBUG: Final processed users:', usersWithDistance);
+    console.log('🔍 DEMO DEBUG: Final user count:', usersWithDistance.length);
+
+    return {
+      success: true,
+      users: usersWithDistance
+    };
+
+  } catch (error) {
+    console.error('🔍 DEMO DEBUG: Error in getUsersByExactCoordinates:', error);
+    return {
+      success: false,
+      error: 'Failed to get users by exact coordinates'
+    };
+  }
+};
+
 // Get nearby users using database RPC function for exact coordinate matching
 export const getNearbyUsers = async (
   currentUserId: string,
