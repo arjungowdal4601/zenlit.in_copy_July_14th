@@ -49,6 +49,13 @@ A modern social media application built with Next.js 15, TypeScript, and Tailwin
 7. **Profile Screen** - User profiles with social verification
 8. **Edit Profile** - Update profile information and verify social accounts
 
+## 🧪 Demo Account
+
+You can try the app without creating an account by signing in with the demo user
+(`demo@zenlit.in`). The demo account previously displayed a set of mock profile
+s. It now loads all live profiles around you and ignores location filters, so yo
+u immediately see everyone nearby.
+
 ## 🔧 Installation & Setup
 
 1. **Clone the repository:**
