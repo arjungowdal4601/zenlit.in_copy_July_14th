@@ -4,43 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm --prefix supabase run start\" \"next dev\"",
-    "dev:web": "next dev",
     "dev:supabase": "npm --prefix supabase run start",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "supabase:reset": "npm --prefix supabase run reset",
-    "supabase:types": "npm --prefix supabase run generate-types"
+    "supabase:reset": "npm --prefix supabase run reset"
   },
   "dependencies": {
-    "@heroicons/react": "^2.0.18",
-    "@tabler/icons-react": "^2.47.0",
-    "@radix-ui/react-slot": "^1.0.2",
-    "@supabase/supabase-js": "^2.50.0",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.0.0",
-    "date-fns": "^2.30.0",
-    "framer-motion": "^10.16.0",
-    "lucide-react": "^0.356.0",
-    "nanoid": "^4.0.2",
-    "next": "^15.0.0",
-    "next-pwa": "^5.6.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tailwind-merge": "^2.0.0",
-    "tailwindcss-animate": "^1.0.7"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.7",
-    "autoprefixer": "^10.4.14",
-    "concurrently": "^8.2.2",
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^15.0.0",
-    "postcss": "^8.4.27",
-    "tailwindcss": "^3.3.3",
-    "typescript": "^5.0.2"
+    "@supabase/supabase-js": "^2.50.0"
   }
 }
